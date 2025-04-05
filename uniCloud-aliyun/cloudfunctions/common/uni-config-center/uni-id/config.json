@@ -1,0 +1,28 @@
+{
+  "passwordSecret": "passwordSecret-demo",
+  "tokenSecret": "tokenSecret-demo",
+  "tokenExpiresIn": 7200,
+  "tokenExpiresThreshold": 3600,
+  "passwordErrorLimit": 6,
+  "bindTokenToDevice": true,
+  "passwordErrorRetryTime": 3600,
+  "autoSetInviteCode": false,
+  "forceInviteCode": false,
+  "app-plus": {
+    "tokenExpiresIn": 2592000,
+    "oauth": {
+      "weixin": {
+        "appid": "your appid",
+        "appsecret": "your appsecret"
+      }
+    }
+  },
+  "mp-weixin": {
+    "oauth": {
+      "weixin": {
+        "appid": "your appid",
+        "appsecret": "your appsecret"
+      }
+    }
+  }
+} 

@@ -1,0 +1,8 @@
+{
+  "name": "toggleFavorite",
+  "version": "1.0.0",
+  "description": "处理用户收藏和取消收藏操作",
+  "main": "index.js",
+  "author": "IngredientChecker",
+  "license": "ISC"
+} 

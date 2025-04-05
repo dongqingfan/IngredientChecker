@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安心食 - 我的收藏</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 24px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            align-items: center;
+            font-size: 12px;
+            color: #333;
+        }
+        
+        .header {
+            height: 56px;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .search-bar {
+            background-color: #f0f0f0;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            height: 40px;
+            margin-bottom: 16px;
+        }
+        
+        .search-bar i {
+            color: #999;
+            margin-right: 10px;
+        }
+        
+        .search-input {
+            border: none;
+            background: transparent;
+            flex: 1;
+            height: 100%;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .favorite-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background-color: white;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .favorite-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .favorite-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background-color: #f0f0f0;
+            margin-right: 12px;
+            object-fit: cover;
+        }
+        
+        .favorite-info {
+            flex: 1;
+        }
+        
+        .favorite-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .favorite-date {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        
+        
+        .favorite-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 8px;
+        }
+        
+        .favorite-action {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            transition: color 0.2s;
+        }
+        
+        .favorite-action:hover {
+            color: #666;
+        }
+        
+        .favorite-action.active {
+            color: #FFD700;
+        }
+        
+        .tab-bar {
+            height: 60px;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #eee;
+        }
+        
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.3s;
+            text-decoration: none;
+        }
+        
+        .tab-item.active {
+            color: #4CAF50;
+        }
+        
+        .tab-item i {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+        
+        .empty-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            color: #999;
+            margin-bottom: 16px;
+        }
+        
+        .empty-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .empty-desc {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            height: 40px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            padding: 0 20px;
+        }
+        
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>10:30</span>
+        <div>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-battery-three-quarters"></i>
+        </div>
+    </div>
+    <div class="header">
+        <span>我的收藏</span>
+        <i class="fas fa-edit"></i>
+    </div>
+    <div class="content">
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" placeholder="搜索收藏">
+        </div>
+        
+        <a href="result.html" class="favorite-item">
+            <img src="https://via.placeholder.com/60" class="favorite-img">
+            <div class="favorite-info">
+                <div class="favorite-title">康师傅红烧牛肉面</div>
+                <div class="favorite-date">2023-06-15 14:30</div>
+            </div>
+
+            <div class="favorite-actions" onclick="event.preventDefault(); event.stopPropagation();">
+                <div class="favorite-action favorite-btn">
+                    <i class="fas fa-star" style="color: #FFD700;"></i>
+                </div>
+            </div>
+        </a>
+        
+        <a href="result.html" class="favorite-item">
+            <img src="https://via.placeholder.com/60" class="favorite-img">
+            <div class="favorite-info">
+                <div class="favorite-title">伊利纯牛奶</div>
+                <div class="favorite-date">2023-06-08 09:20</div>
+            </div>
+
+            <div class="favorite-actions" onclick="event.preventDefault(); event.stopPropagation();">
+                <div class="favorite-action favorite-btn">
+                    <i class="fas fa-star" style="color: #FFD700;"></i>
+                </div>
+            </div>
+        </a>
+        
+        <!-- 空状态 -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="empty-title">暂无收藏</div>
+            <div class="empty-desc">收藏您感兴趣的食品，方便随时查看</div>
+            <a href="home.html" class="btn btn-primary">
+                <i class="fas fa-home" style="margin-right: 8px;"></i>
+                返回首页
+            </a>
+        </div>
+    </div>
+    
+    <div class="tab-bar">
+        <a href="home.html" class="tab-item">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a href="favorites.html" class="tab-item active">
+            <i class="fas fa-star"></i>
+            <span>收藏</span>
+        </a>
+        <a href="profile.html" class="tab-item">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </div>
+
+    <script>
+        // 处理收藏按钮点击事件
+        document.querySelectorAll('.favorite-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 切换收藏状态
+                const starIcon = this.querySelector('i');
+                if (starIcon.classList.contains('far')) {
+                    // 添加收藏
+                    starIcon.classList.remove('far');
+                    starIcon.classList.add('fas');
+                    starIcon.style.color = '#FFD700';
+                } else {
+                    // 取消收藏
+                    starIcon.classList.remove('fas');
+                    starIcon.classList.add('far');
+                    starIcon.style.color = '';
+                }
+            });
+        });
+        
+        // 添加左滑删除功能
+        document.querySelectorAll('.favorite-item').forEach(item => {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+            
+            // 触摸开始事件
+            item.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+                currentX = startX;
+                isDragging = true;
+            });
+            
+            // 触摸移动事件
+            item.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                
+                currentX = e.touches[0].clientX;
+                const diffX = currentX - startX;
+                
+                // 只允许左滑（负值）
+                if (diffX < 0) {
+                    // 设置最大滑动距离
+                    const translateX = Math.max(diffX, -100);
+                    this.style.transform = `translateX(${translateX}px)`;
+                    this.style.transition = 'transform 0.1s';
+                }
+            });
+            
+            // 触摸结束事件
+            item.addEventListener('touchend', function() {
+                isDragging = false;
+                const diffX = currentX - startX;
+                
+                // 如果左滑距离超过阈值，则删除该项
+                if (diffX < -50) {
+                    this.style.transform = 'translateX(-100%)';
+                    this.style.opacity = '0';
+                    this.style.transition = 'transform 0.3s, opacity 0.3s';
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        this.remove();
+                        // 检查是否所有收藏都被移除
+                        if (document.querySelectorAll('.favorite-item').length === 0) {
+                            document.getElementById('empty-state').style.display = 'flex';
+                        }
+                    }, 300);
+                } else {
+                    // 未达到阈值，恢复原位
+                    this.style.transform = 'translateX(0)';
+                    this.style.transition = 'transform 0.3s';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

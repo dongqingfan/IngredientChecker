@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安心食 - 原型展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #f0f0f0;
+            min-height: 100vh;
+            padding: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .prototype-frame {
+            width: 800px;
+            height: 1500px;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+        
+        .frame-container {
+            position: relative;
+        }
+        
+        .frame-title {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="frame-container">
+        <div class="frame-title">启动页</div>
+        <iframe src="onboarding.html" class="prototype-frame"></iframe>
+    </div>
+    
+    <div class="frame-container">
+        <div class="frame-title">首页</div>
+        <iframe src="home.html" class="prototype-frame"></iframe>
+    </div>
+    
+    <div class="frame-container">
+        <div class="frame-title">扫描页</div>
+        <iframe src="camera.html" class="prototype-frame"></iframe>
+    </div>
+    
+    <div class="frame-container">
+        <div class="frame-title">识别结果页</div>
+        <iframe src="result.html" class="prototype-frame"></iframe>
+    </div>
+    
+    <div class="frame-container">
+        <div class="frame-title">历史记录页</div>
+        <iframe src="history.html" class="prototype-frame"></iframe>
+    </div>
+    
+    <div class="frame-container">
+        <div class="frame-title">收藏页</div>
+        <iframe src="favorites.html" class="prototype-frame"></iframe>
+    </div>
+    
+    <div class="frame-container">
+        <div class="frame-title">我的页面</div>
+        <iframe src="profile.html" class="prototype-frame"></iframe>
+    </div>
+</body>
+</html>

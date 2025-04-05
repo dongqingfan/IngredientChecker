@@ -1,0 +1,1 @@
+"use strict";exports._imports_0="/static/images/empty.svg",exports._imports_0$1="/static/images/star.svg",exports._imports_0$2="/static/images/default-avatar.png",exports._imports_0$3="/static/images/empty-history.png",exports._imports_1="/static/images/camera.svg",exports._imports_1$1="/static/images/empty-favorites.png";

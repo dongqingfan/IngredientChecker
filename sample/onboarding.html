@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安心食 - 欢迎</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: white;
+            color: #333;
+            width: 800px;
+            height: 1500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .onboarding-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 60px;
+            text-align: center;
+        }
+        
+        .onboarding-image {
+            width: 300px;
+            height: 300px;
+            background-color: #f0f0f0;
+            border-radius: 40px;
+            margin-bottom: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 120px;
+            color: #4CAF50;
+        }
+        
+        .onboarding-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            color: #333;
+        }
+        
+        .onboarding-desc {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 60px;
+            line-height: 1.5;
+        }
+        
+        .onboarding-buttons {
+            display: flex;
+            gap: 24px;
+            width: 100%;
+        }
+        
+        .btn {
+            flex: 1;
+            height: 70px;
+            border-radius: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .onboarding-dots {
+            display: flex;
+            gap: 12px;
+            margin-top: 50px;
+        }
+        
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #ddd;
+            transition: background-color 0.3s;
+        }
+        
+        .dot.active {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-screen">
+        <div class="onboarding-image">
+            <i class="fas fa-leaf"></i>
+        </div>
+        <h1 class="onboarding-title">欢迎使用安心食</h1>
+        <p class="onboarding-desc">扫描食品配料表，了解每一种成分的安全性，让您吃得更安心</p>
+        <div class="onboarding-dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+    <div class="onboarding-buttons" style="position: absolute; bottom: 60px; width: 100%; padding: 0 60px;">
+        <a href="home.html" class="btn btn-primary">开始使用</a>
+    </div>
+</body>
+</html> 

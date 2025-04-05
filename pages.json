@@ -1,0 +1,79 @@
+{
+    "pages" : [
+        {
+            "path" : "pages/home/home",
+            "style" : {
+                "navigationStyle" : "custom"
+            }
+        },
+        {
+            "path" : "pages/favorites/favorites",
+            "style" : {
+                "navigationStyle" : "custom"
+            }
+        },
+        {
+            "path" : "pages/profile/profile",
+            "style" : {
+                "navigationStyle" : "custom"
+            }
+        },
+        {
+            "path" : "pages/onboarding/onboarding",
+            "style" : {
+                "navigationStyle" : "custom"
+            }
+        },
+        {
+            "path" : "pages/camera/camera",
+            "style" : {
+                "navigationStyle" : "custom"
+            }
+        },
+        {
+            "path" : "pages/result/result",
+            "style" : {
+                "navigationStyle" : "custom"
+            }
+        },
+        {
+            "path" : "pages/history/history",
+            "style" : {
+                "navigationStyle" : "custom"
+            }
+        }
+    ],
+    "globalStyle" : {
+        "navigationBarTextStyle" : "black",
+        "navigationBarTitleText" : "安心食",
+        "navigationBarBackgroundColor" : "#F8F8F8",
+        "backgroundColor" : "#F8F8F8"
+    },
+    "tabBar" : {
+        "color" : "#999999",
+        "selectedColor" : "#4CAF50",
+        "backgroundColor" : "#ffffff",
+        "borderStyle" : "black",
+        "list" : [
+            {
+                "pagePath" : "pages/home/home",
+                "text" : "首页",
+                "iconPath" : "/static/tabbar/home.png",
+                "selectedIconPath" : "/static/tabbar/home-active.png"
+            },
+            {
+                "pagePath" : "pages/favorites/favorites",
+                "text" : "收藏",
+                "iconPath" : "/static/tabbar/favorite.png",
+                "selectedIconPath" : "/static/tabbar/favorite-active.png"
+            },
+            {
+                "pagePath" : "pages/profile/profile",
+                "text" : "我的",
+                "iconPath" : "/static/tabbar/profile.png",
+                "selectedIconPath" : "/static/tabbar/profile-active.png"
+            }
+        ]
+    },
+    "uniIdRouter" : {}
+}

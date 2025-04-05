@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安心食 - 历史记录</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 24px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            align-items: center;
+            font-size: 12px;
+            color: #333;
+        }
+        
+        .header {
+            height: 56px;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .search-bar {
+            background-color: #f0f0f0;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            height: 40px;
+            margin-bottom: 16px;
+        }
+        
+        .search-bar i {
+            color: #999;
+            margin-right: 10px;
+        }
+        
+        .search-input {
+            border: none;
+            background: transparent;
+            flex: 1;
+            height: 100%;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background-color: white;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+        }
+        
+        .history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .history-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background-color: #f0f0f0;
+            margin-right: 12px;
+            object-fit: cover;
+        }
+        
+        .history-info {
+            flex: 1;
+        }
+        
+        .history-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .history-date {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .history-favorite {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            transition: color 0.2s;
+        }
+        
+        .history-favorite:hover {
+            color: #666;
+        }
+        
+        .history-favorite.active {
+            color: #FFD700;
+        }
+        
+        .history-action {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .history-action:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .tab-bar {
+            height: 60px;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #eee;
+        }
+        
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.3s;
+            text-decoration: none;
+        }
+        
+        .tab-item.active {
+            color: #4CAF50;
+        }
+        
+        .tab-item i {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+        
+        .empty-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            color: #999;
+            margin-bottom: 16px;
+        }
+        
+        .empty-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .empty-desc {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            height: 40px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            padding: 0 20px;
+        }
+        
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>10:30</span>
+        <div>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-battery-three-quarters"></i>
+        </div>
+    </div>
+    <div class="header">
+        <span>历史记录</span>
+        <i class="fas fa-trash-alt" id="clear-history"></i>
+    </div>
+    <div class="content">
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" placeholder="搜索历史记录">
+        </div>
+        
+        <a href="result.html" class="history-item">
+            <img src="https://via.placeholder.com/60" class="history-img">
+            <div class="history-info">
+                <div class="history-title">康师傅红烧牛肉面</div>
+                <div class="history-date">2023-06-15 14:30</div>
+            </div>
+            <div class="history-favorite active" onclick="event.preventDefault(); event.stopPropagation();">
+                <i class="fas fa-star"></i>
+            </div>
+        </a>
+        
+        <a href="result.html" class="history-item">
+            <img src="https://via.placeholder.com/60" class="history-img">
+            <div class="history-info">
+                <div class="history-title">可口可乐</div>
+                <div class="history-date">2023-06-14 10:15</div>
+            </div>
+            <div class="history-favorite" onclick="event.preventDefault(); event.stopPropagation();">
+                <i class="far fa-star"></i>
+            </div>
+        </a>
+        
+        <a href="result.html" class="history-item">
+            <img src="https://via.placeholder.com/60" class="history-img">
+            <div class="history-info">
+                <div class="history-title">雀巢咖啡</div>
+                <div class="history-date">2023-06-13 08:45</div>
+            </div>
+            <div class="history-favorite" onclick="event.preventDefault(); event.stopPropagation();">
+                <i class="far fa-star"></i>
+            </div>
+        </a>
+        
+        <a href="result.html" class="history-item">
+            <img src="https://via.placeholder.com/60" class="history-img">
+            <div class="history-info">
+                <div class="history-title">统一老坛酸菜牛肉面</div>
+                <div class="history-date">2023-06-12 12:20</div>
+            </div>
+            <div class="history-favorite" onclick="event.preventDefault(); event.stopPropagation();">
+                <i class="far fa-star"></i>
+            </div>
+        </a>
+        
+        <a href="result.html" class="history-item">
+            <img src="https://via.placeholder.com/60" class="history-img">
+            <div class="history-info">
+                <div class="history-title">百事可乐</div>
+                <div class="history-date">2023-06-10 16:05</div>
+            </div>
+            <div class="history-favorite" onclick="event.preventDefault(); event.stopPropagation();">
+                <i class="far fa-star"></i>
+            </div>
+        </a>
+        
+        <!-- 空状态 -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="empty-title">暂无历史记录</div>
+            <div class="empty-desc">扫描食品配料表后，记录将显示在这里</div>
+            <a href="camera.html" class="btn btn-primary">
+                <i class="fas fa-camera" style="margin-right: 8px;"></i>
+                开始扫描
+            </a>
+        </div>
+    </div>
+    
+    <div class="tab-bar">
+        <a href="home.html" class="tab-item">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a href="favorites.html" class="tab-item">
+            <i class="fas fa-star"></i>
+            <span>收藏</span>
+        </a>
+        <a href="profile.html" class="tab-item">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </div>
+
+    <script>
+        // 清空历史记录
+        document.getElementById('clear-history').addEventListener('click', function() {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                document.querySelectorAll('.history-item').forEach(item => {
+                    item.style.display = 'none';
+                });
+                document.getElementById('empty-state').style.display = 'flex';
+            }
+        });
+        
+        // 处理收藏按钮点击事件
+        document.querySelectorAll('.history-favorite').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 切换收藏状态
+                const starIcon = this.querySelector('i');
+                if (starIcon.classList.contains('far')) {
+                    // 添加收藏
+                    starIcon.classList.remove('far');
+                    starIcon.classList.add('fas');
+                    this.classList.add('active');
+                } else {
+                    // 取消收藏
+                    starIcon.classList.remove('fas');
+                    starIcon.classList.add('far');
+                    this.classList.remove('active');
+                }
+            });
+        });
+        
+        // 添加左滑删除功能
+        document.querySelectorAll('.history-item').forEach(item => {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+            
+            // 触摸开始事件
+            item.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+                currentX = startX;
+                isDragging = true;
+            });
+            
+            // 触摸移动事件
+            item.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                
+                currentX = e.touches[0].clientX;
+                const diffX = currentX - startX;
+                
+                // 只允许左滑（负值）
+                if (diffX < 0) {
+                    // 设置最大滑动距离
+                    const translateX = Math.max(diffX, -100);
+                    this.style.transform = `translateX(${translateX}px)`;
+                    this.style.transition = 'transform 0.1s';
+                }
+            });
+            
+            // 触摸结束事件
+            item.addEventListener('touchend', function() {
+                isDragging = false;
+                const diffX = currentX - startX;
+                
+                // 如果左滑距离超过阈值，则删除该项
+                if (diffX < -50) {
+                    this.style.transform = 'translateX(-100%)';
+                    this.style.opacity = '0';
+                    this.style.transition = 'transform 0.3s, opacity 0.3s';
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        this.remove();
+                        
+                        // 检查是否所有历史记录都被删除
+                        if (document.querySelectorAll('.history-item').length === 0) {
+                            document.getElementById('empty-state').style.display = 'flex';
+                        }
+                    }, 300);
+                } else {
+                    // 未达到阈值，恢复原位
+                    this.style.transform = 'translateX(0)';
+                    this.style.transition = 'transform 0.3s';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

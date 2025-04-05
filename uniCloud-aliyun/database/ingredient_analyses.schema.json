@@ -1,0 +1,93 @@
+{
+	"bsonType": "object",
+	"required": ["fileID", "analysis", "createdAt"],
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": "doc.createdBy == auth.uid",
+		"delete": "doc.createdBy == auth.uid"
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"fileID": {
+			"bsonType": "string",
+			"description": "云存储中的图片文件ID"
+		},
+		"openid": {
+			"bsonType": "string",
+			"description": "用户微信openid，用于标识微信用户"
+		},
+		"analysis": {
+			"bsonType": "object",
+			"description": "配料分析结果",
+			"properties": {
+				"score": {
+					"bsonType": "int",
+					"description": "安全评分，1-100"
+				},
+				"scoreTitle": {
+					"bsonType": "string",
+					"description": "评分标题，如'中等安全性'"
+				},
+				"scoreDesc": {
+					"bsonType": "string",
+					"description": "评分描述"
+				},
+				"nutritionDesc": {
+					"bsonType": "string",
+					"description": "营养评估描述"
+				},
+				"suitablePeople": {
+					"bsonType": "string",
+					"description": "适宜人群"
+				},
+				"ingredients": {
+					"bsonType": "array",
+					"description": "配料列表",
+					"items": {
+						"bsonType": "object",
+						"properties": {
+							"name": {
+								"bsonType": "string",
+								"description": "配料名称"
+							},
+							"description": {
+								"bsonType": "string",
+								"description": "配料描述"
+							},
+							"riskLevel": {
+								"bsonType": "string",
+								"description": "风险等级：low, medium, high"
+							},
+							"category": {
+								"bsonType": "string",
+								"description": "配料类别"
+							},
+							"usage": {
+								"bsonType": "string",
+								"description": "配料用途"
+							},
+							"risks": {
+								"bsonType": "string",
+								"description": "风险描述"
+							}
+						}
+					}
+				}
+			}
+		},
+		"createdAt": {
+			"bsonType": "timestamp",
+			"description": "创建时间"
+		},
+		"createdBy": {
+			"bsonType": "string",
+			"description": "创建者ID，参考uni-id-users表",
+			"forceDefaultValue": {
+				"$env": "uid"
+			}
+		}
+	}
+} 

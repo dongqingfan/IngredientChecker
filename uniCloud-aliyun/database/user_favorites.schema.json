@@ -1,0 +1,30 @@
+{
+	"bsonType": "object",
+	"required": ["openid", "analysis_id"],
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": false,
+		"delete": "doc.openid == auth.uid"
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"openid": {
+			"bsonType": "string",
+			"description": "用户的微信OpenID"
+		},
+		"analysis_id": {
+			"bsonType": "string",
+			"description": "配料分析记录ID，关联ingredient_analyses表的_id"
+		},
+		"createdAt": {
+			"bsonType": "timestamp",
+			"description": "创建时间",
+			"forceDefaultValue": {
+				"$env": "now"
+			}
+		}
+	}
+} 

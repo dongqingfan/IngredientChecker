@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安心食 - 扫描配料表</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .camera-preview {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .camera-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 200px;
+            border: 2px dashed white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.5;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .camera-controls {
+            height: 120px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .back-btn, .flash-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+        }
+        
+        .back-btn:hover, .flash-btn:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        
+        .capture-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+        }
+        
+        .capture-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .capture-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .capture-btn::after {
+            content: '';
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #000;
+        }
+        
+        .mode-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .mode-switch:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        
+        .manual-input {
+            position: absolute;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+        }
+        
+        .manual-input:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        
+        /* 新增样式 */
+        .step-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+        
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .step-dot.active {
+            background-color: white;
+        }
+        
+        .step-title {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .photo-preview {
+            position: absolute;
+            bottom: 140px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            border: 2px solid white;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .confirm-btn {
+            position: absolute;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: none;
+        }
+        
+        .confirm-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* 底部提示框样式 */
+        .bottom-tip-container {
+            position: absolute;
+            bottom: 200px;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 10;
+        }
+        
+        .bottom-tip-text {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .bottom-tip-frame {
+            width: 100%;
+            height: 80px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .placeholder-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="camera-preview">
+        <img src="https://via.placeholder.com/1080x1920/333333/666666" class="preview-img">
+        
+        <!-- 步骤指示器 -->
+        <div class="step-indicator">
+            <div class="step-dot active" id="step1-dot"></div>
+            <div class="step-dot" id="step2-dot"></div>
+        </div>
+        
+        <!-- 步骤标题 -->
+        <div class="step-title" id="step-title">第1步：拍摄商品名称</div>
+        
+        <!-- 拍摄引导框 -->
+        <div class="camera-guide" id="step1-guide">
+            将商品名称放入框内<br>保持稳定并对焦清晰
+        </div>
+        <div class="camera-guide hidden" id="step2-guide">
+            将配料表放入框内<br>保持稳定并对焦清晰
+        </div>
+        
+        <!-- 模式切换按钮 -->
+        <div class="mode-switch">
+            <i class="fas fa-sync-alt"></i> 切换模式
+        </div>
+        
+        <!-- 手动输入按钮 -->
+        <a href="#" class="manual-input" id="manual-input-btn">
+            <i class="fas fa-keyboard"></i> 手动输入
+        </a>
+        
+        <!-- 照片预览 -->
+        <div class="photo-preview" id="photo1-preview">
+            <img src="" alt="商品名称照片">
+        </div>
+        
+        <!-- 第二张照片预览 -->
+        <div class="photo-preview" id="photo2-preview" style="left: 90px; display: none;">
+            <img src="" alt="配料表照片">
+        </div>
+        
+        <!-- 确认按钮 -->
+        <a href="scanning.html" class="confirm-btn" id="confirm-btn">
+            <i class="fas fa-check"></i> 确认上传
+        </a>
+        
+        <!-- 底部提示框 -->
+        <div class="bottom-tip-container">
+            <div class="bottom-tip-text" id="bottom-tip-text">请拍摄商品名称</div>
+            <div class="bottom-tip-frame" id="bottom-tip-frame">
+                <div class="placeholder-text" id="placeholder-text">点击下方按钮拍照</div>
+                <img src="" alt="拍摄照片" id="bottom-preview-img" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+            </div>
+        </div>
+    </div>
+    
+    <div class="camera-controls">
+        <a href="home.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="capture-btn" id="capture-btn"></div>
+        <div class="flash-btn">
+            <i class="fas fa-bolt"></i>
+        </div>
+    </div>
+    
+    <script>
+        // 当前步骤
+        let currentStep = 1;
+        // 照片数据
+        let photos = {
+            step1: null,
+            step2: null
+        };
+        
+        // 获取DOM元素
+        const step1Dot = document.getElementById('step1-dot');
+        const step2Dot = document.getElementById('step2-dot');
+        const stepTitle = document.getElementById('step-title');
+        const step1Guide = document.getElementById('step1-guide');
+        const step2Guide = document.getElementById('step2-guide');
+        const photo1Preview = document.getElementById('photo1-preview');
+        const photo2Preview = document.getElementById('photo2-preview');
+        const captureBtn = document.getElementById('capture-btn');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const manualInputBtn = document.getElementById('manual-input-btn');
+        
+        // 获取底部提示框相关DOM元素
+        const bottomTipText = document.getElementById('bottom-tip-text');
+        const bottomTipFrame = document.getElementById('bottom-tip-frame');
+        const placeholderText = document.getElementById('placeholder-text');
+        const bottomPreviewImg = document.getElementById('bottom-preview-img');
+        
+        // 拍照按钮点击事件
+        captureBtn.addEventListener('click', function() {
+            // 模拟拍照，实际应用中应该调用相机API
+            if (currentStep === 1) {
+                // 第一步：拍摄商品名称
+                photos.step1 = 'https://via.placeholder.com/60/4CAF50/FFFFFF?text=商品名称';
+                
+                // 显示第一张照片预览
+                photo1Preview.querySelector('img').src = photos.step1;
+                photo1Preview.style.display = 'block';
+                
+                // 更新底部提示框
+                bottomTipText.textContent = '商品名称已拍摄，请继续拍摄配料表';
+                placeholderText.style.display = 'none';
+                bottomPreviewImg.src = photos.step1;
+                bottomPreviewImg.style.display = 'block';
+                
+                // 更新步骤指示器
+                step1Dot.classList.remove('active');
+                step2Dot.classList.add('active');
+                
+                // 更新步骤标题和引导框
+                stepTitle.textContent = '第2步：拍摄配料表';
+                step1Guide.classList.add('hidden');
+                step2Guide.classList.remove('hidden');
+                
+                // 更新当前步骤
+                currentStep = 2;
+            } else if (currentStep === 2) {
+                // 第二步：拍摄配料表
+                photos.step2 = 'https://via.placeholder.com/60/4CAF50/FFFFFF?text=配料表';
+                
+                // 显示第二张照片预览
+                photo2Preview.querySelector('img').src = photos.step2;
+                photo2Preview.style.display = 'block';
+                
+                // 更新底部提示框
+                bottomTipText.textContent = '配料表已拍摄，请确认上传';
+                bottomPreviewImg.src = photos.step2;
+                
+                // 隐藏拍照引导框
+                step2Guide.classList.add('hidden');
+                
+                // 显示确认按钮
+                confirmBtn.style.display = 'block';
+                
+                // 隐藏手动输入按钮
+                manualInputBtn.style.display = 'none';
+            }
+        });
+        
+        // 手动输入按钮点击事件
+        manualInputBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // 这里应该跳转到手动输入页面，但目前该页面不存在
+            alert('手动输入功能暂未实现');
+        });
+    </script>
+</body>
+</html>

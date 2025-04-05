@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>安心食 - 配料分析</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .status-bar {
+            height: 24px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            align-items: center;
+            font-size: 12px;
+            color: #333;
+        }
+        
+        .header {
+            height: 56px;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .header-left i {
+            margin-right: 10px;
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-top: 30px; /* 增加顶部内边距，确保内容不被顶部遮挡 */
+            padding-bottom: 60px; /* 增加底部内边距，确保内容不被导航栏遮挡 */
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .result-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .action-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .summary-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 4vw;
+            margin-bottom: 4vw;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .star-rating {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .star-score {
+            position: absolute;
+            font-weight: bold;
+            font-size: 24px;
+            color: white;
+            z-index: 1;
+        }
+        
+        .star {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .score-high {
+            color: #4CAF50;
+        }
+        
+        .score-medium {
+            color: #FFC107;
+        }
+        
+        .score-low {
+            color: #F44336;
+        }
+        
+        .summary-info {
+            flex: 1;
+        }
+        
+        .summary-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .summary-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .detail-section {
+            background-color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+        
+        .detail-title {
+            font-size: 17px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        
+        .detail-title i {
+            margin-right: 10px;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        
+        .ingredient-list {
+            margin-bottom: 12px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .ingredient-item {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 12px 5px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .ingredient-item:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .ingredient-item:last-child {
+            border-bottom: none;
+        }
+        
+        .ingredient-name {
+            font-size: 14px;
+            color: #333;
+            width: 35%;
+            padding-right: 10px;
+            font-weight: 500;
+        }
+        
+        .ingredient-function {
+            font-size: 12px;
+            color: #999;
+            width: 35%;
+            text-align: left;
+            padding-left: 5px;
+            padding-right: 10px;
+            font-weight: 300;
+            opacity: 0.8;
+        }
+        
+        .ingredient-safety {
+            font-size: 13px;
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 16px;
+            width: 25%;
+            text-align: center;
+            display: inline-block;
+            z-index: 1;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .safe {
+            color: white;
+            background-color: #4CAF50;
+            box-shadow: 0 1px 3px rgba(76, 175, 80, 0.3);
+        }
+        
+        .warning {
+            color: #333;
+            background-color: #FFC107;
+            box-shadow: 0 1px 3px rgba(255, 193, 7, 0.3);
+        }
+        
+        .danger {
+            color: white;
+            background-color: #F44336;
+            box-shadow: 0 1px 3px rgba(244, 67, 54, 0.3);
+        }
+        
+        .detail-card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .card-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .section-content {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .btn {
+            height: 40px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-list {
+            margin-top: 8px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .tab-bar {
+            height: 50px;  /* 减小导航栏高度 */
+            background-color: white;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            margin: 0; /* 确保没有外边距 */
+        }
+        
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #999;
+            font-size: 22px;
+            transition: color 0.3s;
+            height: 100%;
+            transform: translateY(9px); /* 将整体下移18px的一半，保持整体视觉居中 */
+        }
+        
+        .tab-item.active {
+            color: #4CAF50;
+        }
+        
+        .tab-item i {
+            font-size: 1.75rem;
+            margin-bottom: 5px;
+        }
+        
+        .tab-item span {
+            font-size: 12px;
+            line-height: 1;
+        }
+        
+        .ingredient-item {
+            cursor: pointer;
+        }
+        
+        .ingredient-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            background-color: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .modal-close {
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .modal-close:hover {
+            color: #4CAF50;
+        }
+        
+        .ingredient-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-label {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .section-text {
+            font-size: 15px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .safety-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        .safety-safe {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .safety-warning {
+            background-color: #FFC107;
+            color: #333;
+        }
+        
+        .safety-danger {
+            background-color: #F44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>10:30</span>
+        <div>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-battery-three-quarters"></i>
+        </div>
+    </div>
+    <div class="header">
+        <div class="header-left">
+            <a href="home.html" style="color: white; text-decoration: none;">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <span>配料分析</span>
+        </div>
+        <i class="fas fa-ellipsis-v"></i>
+    </div>
+    <div class="content">
+        <div class="result-header">
+            <div class="result-title">康师傅红烧牛肉面</div>
+            <div class="action-buttons">
+                <div class="action-btn" id="favorite-btn">
+                    <i class="far fa-star"></i>
+                </div>
+                <div class="action-btn">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div style="display: flex; width: 100%; align-items: center;">
+                <div class="star-rating" style="margin-right: 30px; margin-left: 10px;">
+                    <svg viewBox="0 0 51 48" style="width: 55px; height: 55px;">
+                        <path class="star" fill="#FFC107" d="M25,1 L32,17 L49,19 L37,32 L40,48 L25,40 L10,48 L13,32 L1,19 L18,17 Z"/>
+                    </svg>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 18px; font-weight: bold; color: #333; margin-bottom: 4px;">中等安全性</div>
+                    <div style="color: #333; font-size: 15px; line-height: 1.5;">含有少量可能引起敏感的添加剂，但总体安全性良好。适合大多数人食用。</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <div class="detail-title">
+                <i class="fas fa-list"></i>
+                <span>配料列表分析</span>
+            </div>
+            
+            <div class="ingredient-list" style="margin-bottom: 20px;">
+                <div class="ingredient-item">
+                    <div class="ingredient-name">小麦粉</div>
+                    <div class="ingredient-function">主要原料</div>
+                    <div class="ingredient-safety safe">安全</div>
+                </div>
+                <div class="ingredient-item">
+                    <div class="ingredient-name">棕榈油</div>
+                    <div class="ingredient-function">油脂</div>
+                    <div class="ingredient-safety warning">谨慎</div>
+                </div>
+                <div class="ingredient-item">
+                    <div class="ingredient-name">食用盐</div>
+                    <div class="ingredient-function">调味剂</div>
+                    <div class="ingredient-safety safe">安全</div>
+                </div>
+                <div class="ingredient-item">
+                    <div class="ingredient-name">谷氨酸钠</div>
+                    <div class="ingredient-function">增味剂</div>
+                    <div class="ingredient-safety warning">谨慎</div>
+                </div>
+                <div class="ingredient-item">
+                    <div class="ingredient-name">酵母提取物</div>
+                    <div class="ingredient-function">增味剂</div>
+                    <div class="ingredient-safety safe">安全</div>
+                </div>
+                <div class="ingredient-item">
+                    <div class="ingredient-name">柠檬酸</div>
+                    <div class="ingredient-function">酸味剂</div>
+                    <div class="ingredient-safety safe">安全</div>
+                </div>
+                <div class="ingredient-item">
+                    <div class="ingredient-name">焦糖色</div>
+                    <div class="ingredient-function">着色剂</div>
+                    <div class="ingredient-safety safe">安全</div>
+                </div>
+                <div class="ingredient-item">
+                    <div class="ingredient-name">胭脂红</div>
+                    <div class="ingredient-function">着色剂</div>
+                    <div class="ingredient-safety danger">风险</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <div class="detail-title">
+                <i class="fas fa-heartbeat"></i>
+                <span>健康建议</span>
+            </div>
+            
+            <div class="detail-card">
+                <div class="card-title">营养评估</div>
+                <div class="section-content">
+                    该产品含有较高的钠和脂肪含量，建议适量食用。每100克含钠约1500mg，占每日推荐摄入量的75%。
+                </div>
+            </div>
+            
+            <div class="detail-card">
+                <div class="card-title">适宜人群</div>
+                <div class="section-content">
+                    一般健康人群可适量食用。不建议高血压、心脏病患者和儿童经常食用。
+                </div>
+            </div>
+            
+            <div class="detail-card">
+                <div class="card-title">替代建议</div>
+                <div class="section-content">
+                    可选择低钠、无添加剂的同类产品，或自制面条搭配新鲜食材，更健康美味。
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="tab-bar">
+        <a href="home.html" class="tab-item">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a href="favorites.html" class="tab-item">
+            <i class="fas fa-star"></i>
+            <span>收藏</span>
+        </a>
+        <a href="profile.html" class="tab-item">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </div>
+
+    <!-- 配料详情弹层 -->
+    <div class="ingredient-modal" id="ingredientModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="ingredientName">谷氨酸钠（味精）</div>
+                <div class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            
+            <div class="ingredient-section">
+                <div class="section-label">成分类别</div>
+                <div class="section-text">食品添加剂 - 调味剂</div>
+            </div>
+            
+            <div class="ingredient-section">
+                <div class="section-label">主要用途</div>
+                <div class="section-text">增强食品的鲜味，是最常见的调味增鲜剂之一。能够激发食物中鲜味氨基酸的协同作用，增强食物的整体风味。</div>
+            </div>
+            
+            <div class="ingredient-section">
+                <div class="section-label">安全性评估</div>
+                <div class="section-text">
+                    <div class="safety-tag safety-warning">需要注意</div>
+                    <p>
+                        - 正常食用量下对大多数人安全<br>
+                        - 部分人可能出现"中式餐厅综合征"<br>
+                        - 建议孕妇、儿童适量使用<br>
+                        - 每日建议摄入量不超过16g/kg体重
+                    </p>
+                </div>
+            </div>
+            
+            <div class="ingredient-section">
+                <div class="section-label">可能风险</div>
+                <div class="section-text">
+                    - 部分人可能出现头痛、心悸、出汗症状<br>
+                    - 可能导致血压升高<br>
+                    - 大量摄入可能影响儿童神经系统发育
+                </div>
+            </div>
+            
+            <div class="ingredient-section">
+                <div class="section-label">使用建议</div>
+                <div class="section-text">
+                    - 建议适量使用<br>
+                    - 如有不适及时就医<br>
+                    - 可选择使用天然调味料替代
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 添加媒体查询，针对不同屏幕尺寸进行优化
+        if (window.matchMedia("(max-width: 320px)").matches) {
+            document.body.style.fontSize = '14px';
+            document.querySelector('.result-title').style.fontSize = '1.1rem';
+        }
+        
+        if (window.matchMedia("(min-width: 768px)").matches) {
+            document.querySelector('.content').style.padding = '20px';
+            document.querySelector('.content').style.maxWidth = '600px';
+            document.querySelector('.content').style.margin = '0 auto';
+            document.querySelectorAll('.summary-card').forEach(card => {
+                card.style.padding = '20px';
+                card.style.marginBottom = '20px';
+            });
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.style.width = '40px';
+                btn.style.height = '40px';
+            });
+        }
+        
+        // 收藏功能
+        document.getElementById('favorite-btn').addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            if (icon.classList.contains('far')) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                icon.style.color = '#FFC107';
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                icon.style.color = '';
+            }
+        });
+        
+        // 显示配料详情弹层
+        function showIngredientModal(ingredient) {
+            const modal = document.getElementById('ingredientModal');
+            const nameElement = document.getElementById('ingredientName');
+            
+            // 更新标题
+            nameElement.textContent = ingredient;
+            
+            // 显示弹层
+            modal.style.display = 'flex';
+        }
+        
+        // 关闭弹层
+        function closeModal() {
+            document.getElementById('ingredientModal').style.display = 'none';
+        }
+        
+        // 为所有配料项添加点击事件
+        document.querySelectorAll('.ingredient-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const ingredientName = this.querySelector('.ingredient-name').textContent;
+                showIngredientModal(ingredientName);
+            });
+        });
+        
+        // 点击弹层外部关闭弹层
+        document.getElementById('ingredientModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
