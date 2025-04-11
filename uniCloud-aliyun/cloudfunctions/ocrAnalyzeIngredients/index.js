@@ -8,7 +8,7 @@ exports.main = async (event, context) => {
 		// 1. 从数据库获取AI Token
 		const tokenRecord = await db.collection('settings').limit(1).get();
 		
-		if (!tokenRecord.data || tokenRecord.data.length === 0) {
+		if (!tokenRecord.result || tokenRecord.result.data.length === 0) {
 			return {
 				code: -1,
 				message: '未找到AI Token配置',
@@ -16,7 +16,7 @@ exports.main = async (event, context) => {
 			};
 		}
 		
-		const aiToken = tokenRecord.data[0].ai_chat;
+		const aiToken = tokenRecord.result.data[0].ai_chat;
 		
 		// 2. 检查输入参数
 		if (!event.fileContent && !event.fileID) {
@@ -29,17 +29,11 @@ exports.main = async (event, context) => {
 		
 		console.log('开始处理图片...');
 		
-		if(!event.fileContent){
-			console.log('没有提供图片内容，将尝试从fileID获取:', event.fileID);
-		}
-		
 		let imageContent;
-		let isTemporaryContent = false; // 标记是否是临时获取的内容，用于决定是否保存分析结果
 		
 		// 如果传入的是fileID而不是图片内容
 		if (event.fileID && !event.fileContent) {
 			console.log('从云存储获取图片, fileID:', event.fileID);
-			isTemporaryContent = true;
 			try {
 				// 获取临时访问链接
 				const tempFileResult = await uniCloud.getTempFileURL({
@@ -72,7 +66,7 @@ exports.main = async (event, context) => {
 						const fileType = event.fileID.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
 						imageContent = `data:${fileType};base64,${base64Image}`;
 						
-						console.log('图片内容准备完成，可以开始分析');
+						console.log('图片内容准备完成，可以开始OCR识别');
 					} else {
 						console.error('临时URL不存在:', fileInfo);
 						throw new Error('获取临时文件URL失败');
@@ -95,15 +89,12 @@ exports.main = async (event, context) => {
 			// 使用传入的图片内容
 			console.log('使用传入的图片内容，长度:', event.fileContent ? event.fileContent.length : 0);
 			imageContent = `data:${event.fileType};base64,${event.fileContent}`;
-			
-			// 如果同时传入了fileID，则标记为需要保存分析结果
-			isTemporaryContent = !event.fileID;
 		}
 		
-		console.log('调用AI API分析配料表...');
+		// 3. 第一步：调用OCR识别图片中的配料表文本
+		console.log('开始OCR识别配料表文本...');
 		
-		// 调用通义千问API进行配料表分析
-		const response = await axios({
+		const ocrResponse = await axios({
 			method: 'POST',
 			url: 'https://api.siliconflow.cn/v1/chat/completions',
 			headers: {
@@ -111,48 +102,14 @@ exports.main = async (event, context) => {
 				'Content-Type': 'application/json'
 			},
 			data: {
-				model: 'Qwen/Qwen2.5-VL-32B-Instruct',
+				model: 'Pro/Qwen/Qwen2.5-VL-7B-Instruct', // 使用更轻量的模型进行OCR识别
 				messages: [
 					{
 						role: 'user',
 						content: [
 							{
 								type: 'text',
-								text: `这张图片是食品配料表。请分析图中识别的所有配料及其安全性。
-请严格按照以下JSON格式返回结果，必须是完整有效的标准JSON，不得使用省略号或其他简化符号。
-
-请按照以下要求操作：
-1. 每个配料必须有完整的所有字段信息，不能使用省略号、注释或简写
-2. 完整输出所有JSON结构，不要用"..."或类似符号简化或省略任何内容
-3. 确保返回的JSON能通过JSON.parse()验证，不要添加多余的逗号或缺少必要的逗号
-4. 相同的成分只出现一次，不要重复列出。例如"食用盐"和"盐"视为同一种成分
-
-JSON格式如下：
-{
-  "score": 75,
-  "scoreTitle": "中等安全性",
-  "scoreDesc": "简要描述产品安全性",
-  "ingredients": [
-    {
-      "name": "成分1名称",
-      "description": "成分1描述",
-      "riskLevel": "low"
-    },
-    {
-      "name": "成分2名称",
-      "description": "成分2描述",
-      "riskLevel": "low"
-    }
-  ],
-  "nutritionDesc": "营养描述",
-  "suitablePeople": "适宜人群"
-}
-
-再次提醒：
-- 不要使用省略号或任何简化符号
-- 每个配料必须包含完整的所有字段
-- 确保JSON格式完整有效，检查所有引号和括号是否匹配
-- 最终JSON应该能通过JSON.parse()验证`
+								text: '请识别这张图片中显示的所有文字，它是一张食品包装上的配料表。请确保识别完整，不要遗漏任何文字。只需返回识别出的文字内容，不要分析，不要添加额外说明。'
 							},
 							{
 								type: 'image_url',
@@ -164,8 +121,93 @@ JSON格式如下：
 					}
 				],
 				stream: false,
+				max_tokens: 1000,
+				temperature: 0.1,
+				top_p: 0.1
+			}
+		});
+		
+		console.log('OCR识别完成，处理识别结果...');
+		
+		// 提取OCR识别到的文本
+		let ocrText = '';
+		if (ocrResponse.data && ocrResponse.data.choices && ocrResponse.data.choices.length > 0) {
+			ocrText = ocrResponse.data.choices[0].message.content.trim();
+			console.log('OCR识别结果:', ocrText);
+		} else {
+			console.error('OCR识别结果异常:', ocrResponse.data);
+			return {
+				code: -5,
+				message: 'OCR识别失败',
+				data: null
+			};
+		}
+		
+		// 4. 第二步：使用识别到的文本进行配料分析
+		console.log('开始分析识别到的配料表文本...');
+		
+		const analysisResponse = await axios({
+			method: 'POST',
+			url: 'https://api.siliconflow.cn/v1/chat/completions',
+			headers: {
+				'Authorization': `Bearer ${aiToken}`,
+				'Content-Type': 'application/json'
+			},
+			data: {
+				model: 'Qwen/Qwen2.5-72B-Instruct', // 使用大模型分析配料内容
+				messages: [
+					{
+						role: 'user',
+						content: [
+							{
+								type: 'text',
+								text: `这是一个食品配料表的OCR识别结果，请分析其中的所有配料及其安全性：
+
+${ocrText}
+
+请分析这些配料的安全性，并严格按照以下JSON格式返回结果，必须是完整有效的标准JSON，不得使用省略号或其他简化符号。
+
+请按照以下要求操作：
+1. 每个配料必须有完整的所有字段信息，不能使用省略号、注释或简写
+2. 完整输出所有JSON结构，不要用"..."或类似符号简化或省略任何内容
+3. 确保返回的JSON能通过JSON.parse()验证，不要添加多余的逗号或缺少必要的逗号
+4. 相同的成分只出现一次，不要重复列出。例如"食用盐"和"盐"视为同一种成分
+5. 如果某成分有多种形式(如"xx(yy)"这种带括号的描述)，请将它们合并为一条记录
+6. 优先分析主要成分，但总共不超过10种，避免输出过长
+
+JSON格式如下：
+{
+  "score": 75,
+  "scoreTitle": "产品名称",
+  "scoreDesc": "简要描述产品安全性",
+  "ingredients": [
+    {
+      "name": "成分1名称",
+      "description": "成分1描述",
+      "riskLevel": "low"
+    },
+    {
+      "name": "成分2名称",
+      "description": "成分2描述",
+      "riskLevel": "medium"
+    }
+  ],
+  "nutritionDesc": "营养描述",
+  "suitablePeople": "适宜人群"
+}
+
+再次提醒：
+- 不要使用省略号或任何简化符号
+- 每个配料必须包含完整的所有字段
+- 确保JSON格式完整有效，检查所有引号和括号是否匹配
+- 最终JSON应该能通过JSON.parse()验证
+- 相同或相似的成分必须合并，不要重复出现`
+							}
+						]
+					}
+				],
+				stream: false,
 				max_tokens: 2048,
-				stop: null,
 				temperature: 0.2,
 				top_p: 0.8,
 				top_k: 50,
@@ -174,14 +216,14 @@ JSON格式如下：
 			}
 		});
 		
-		console.log('AI API调用成功，处理返回结果...');
+		console.log('配料分析完成，处理分析结果...');
 		
 		// 解析返回的结果
-		if (response.data && response.data.choices && response.data.choices.length > 0) {
+		if (analysisResponse.data && analysisResponse.data.choices && analysisResponse.data.choices.length > 0) {
 			try {
 				// 获取返回内容
-				let messageContent = response.data.choices[0].message.content;
-				console.log('AI返回内容:', messageContent);
+				let messageContent = analysisResponse.data.choices[0].message.content;
+				console.log('AI返回原始内容:', messageContent);
 				
 				// 修复常见的JSON格式问题
 				messageContent = messageContent
@@ -226,7 +268,8 @@ JSON格式如下：
 						scoreDesc: jsonData.scoreDesc || '无详细安全信息',
 						ingredients: [],
 						nutritionDesc: jsonData.nutritionDesc || '无营养评估',
-						suitablePeople: jsonData.suitablePeople || '一般人群适量食用'
+						suitablePeople: jsonData.suitablePeople || '一般人群适量食用',
+						ocrText: ocrText // 保存OCR识别的原始文本，以便需要时查看
 					};
 					
 					// 清理成分列表，只保留有效项
@@ -302,6 +345,7 @@ JSON格式如下：
 						message: 'JSON解析失败: ' + e.message,
 						data: {
 							rawText: messageContent,
+							ocrText: ocrText,
 							fallbackData: {
 								score: 0,
 								scoreTitle: '无法分析',
@@ -314,75 +358,26 @@ JSON格式如下：
 					};
 				}
 			} catch (e) {
-				console.error('JSON解析错误:', e);
-				// 如果解析失败，返回原始文本
+				console.error('处理分析结果错误:', e);
+				// 返回OCR原始文本和错误信息
 				return {
-					code: 0,
-					message: 'success',
+					code: -1,
+					message: '处理分析结果错误: ' + e.message,
 					data: {
-						rawText: response.data.choices[0].message.content,
-						parseError: '返回结果无法解析为JSON'
+						ocrText: ocrText,
+						rawAIResponse: analysisResponse.data.choices[0].message.content
 					}
 				};
 			}
 		}
 		
-		// 如果是saveOnly模式，直接保存提供的分析数据
-		if (event.saveOnly && event.analysis) {
-			try {
-				console.log('saveOnly模式，直接保存提供的分析数据');
-				
-				// 验证openid
-				if (!event.openid) {
-					return {
-						code: -2,
-						message: '缺少openid参数',
-						data: null
-					};
-				}
-				
-				// 验证fileID
-				if (!event.fileID) {
-					return {
-						code: -2,
-						message: '缺少fileID参数',
-						data: null
-					};
-				}
-				
-				// 保存分析结果到数据库
-				const collection = db.collection('ingredient_analyses');
-				const addResult = await collection.add({
-					fileID: event.fileID,
-					openid: event.openid,
-					analysis: event.analysis,
-					createdAt: new Date()
-				});
-				
-				console.log('分析结果已保存到数据库, ID:', addResult.id);
-				
-				return {
-					code: 0,
-					message: '保存成功',
-					data: event.analysis,
-					analysis_id: addResult.id
-				};
-			} catch (error) {
-				console.error('保存分析结果失败:', error);
-				return {
-					code: -3,
-					message: '保存分析结果失败: ' + error.message,
-					data: null
-				};
-			}
-		}
-		
 		return {
-			code: 0,
-			message: 'success',
-			data: response.data
+			code: -1,
+			message: '无法获取分析结果',
+			data: {
+				ocrText: ocrText
+			}
 		};
-		
 	} catch (error) {
 		console.error('处理失败：', error);
 		// 打印更详细的错误信息
@@ -397,4 +392,4 @@ JSON格式如下：
 			data: null
 		};
 	}
-};
+}; 

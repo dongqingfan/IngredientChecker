@@ -1,0 +1,12 @@
+{
+  "name": "ocrAnalyzeIngredients",
+  "version": "1.0.0",
+  "description": "基于OCR进行配料表识别和分析的云函数",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^1.6.7"
+  },
+  "extensions": {
+    "uni-cloud-jql": {}
+  }
+} 
