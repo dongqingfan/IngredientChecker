@@ -27,7 +27,7 @@
         </view>
         <view class="summary-info">
           <text class="summary-title">{{foodInfo.scoreTitle}}</text>
-          <text class="summary-desc">{{foodInfo.scoreDesc}}</text>
+     <!--     <text class="summary-desc">{{foodInfo.scoreDesc}}</text> -->
         </view>
       </view>
       
@@ -44,16 +44,16 @@
             :key="index"
           >
             <text class="ingredient-name">{{item.name}}</text>
-            <text class="ingredient-function">{{item.description}}</text>
+          <!--  <text class="ingredient-function">{{item.description}}</text>
             <view class="ingredient-safety" :class="item.riskLevel">
               {{item.riskLevel === 'high' ? '风险' : item.riskLevel === 'medium' ? '谨慎' : '安全'}}
-            </view>
+            </view> -->
           </view>
         </view>
       </view>
       
       <!-- 健康建议 -->
-      <view class="detail-section">
+<!--      <view class="detail-section">
         <view class="detail-title">
           <text class="iconfont icon-heart"></text>
           <text>健康建议</text>
@@ -66,12 +66,7 @@
           <text class="card-title">适宜人群</text>
           <text class="section-content">{{foodInfo.suitablePeople}}</text>
         </view>
-        <!-- 替代建议暂时隐藏 -->
-        <view class="detail-card" style="display: none;">
-          <text class="card-title">替代建议</text>
-          <text class="section-content">{{foodInfo.alternativeDesc}}</text>
-        </view>
-      </view>
+      </view> -->
     </scroll-view>
   </view>
 </template>
