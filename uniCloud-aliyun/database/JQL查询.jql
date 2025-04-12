@@ -10,4 +10,18 @@
 
 // 下面示例查询uni-id-users表的所有数据
 
-db.collection('ingredient_analyses').get();
+// 查询2025年4月12日的记录
+// const startDate = new Date('2025-04-12T00:00:00Z');
+// const endDate = new Date('2025-04-13T00:00:00Z');
+
+// db.collection('ingredient_analyses')
+//   .where({
+//     createdAt: {
+//       $gte: startDate,
+//       $lt: endDate
+//     }
+//   })
+//   .orderBy('createdAt desc')
+//   .get();
+
+ db.collection('settings').limit(1).get()
