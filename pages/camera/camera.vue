@@ -97,7 +97,7 @@ export default {
     confirmPhoto() {
       // 显示加载提示
       uni.showLoading({
-        title: '正在处理...'
+        title: '处理图片中...'
       })
       
       // 获取用户openid
@@ -141,69 +141,77 @@ export default {
             success: (uploadRes) => {
               fileID = uploadRes.fileID;
               
-              // 图片上传成功后，直接调用云函数并传递fileID
-              uni.showLoading({
-                title: '正在分析...'
+              // 准备临时分析数据（显示"分析中"状态）
+              const pendingAnalysis = {
+                fileID: fileID,
+                name: '分析中...',
+                image: fileID,
+                date: new Date().toLocaleString(),
+                isFavorite: false,
+                isPending: true, // 标记为分析中状态
+                analysis: {
+                  score: 0,
+                  scoreTitle: '分析中...',
+                  scoreDesc: '数据正在处理，请稍候（大约需要30秒）',
+                  ingredients: [],
+                  nutritionDesc: '分析中...',
+                  suitablePeople: '分析中...'
+                }
+              };
+              
+              // 保存临时分析数据
+              const pendingList = uni.getStorageSync('pendingAnalyses') || [];
+              pendingList.unshift(pendingAnalysis); // 添加到列表头部
+              uni.setStorageSync('pendingAnalyses', pendingList);
+              
+              // 隐藏加载提示
+              uni.hideLoading();
+              
+              // 显示提示
+              uni.showToast({
+                title: '分析大约需要30秒，正在跳转首页',
+                icon: 'none',
+                duration: 2000
               });
               
-              // 调用云函数分析配料表，仅传递fileID
+              // 马上返回到home页
+              setTimeout(() => {
+                uni.switchTab({
+                  url: '/pages/home/home'
+                });
+              }, 2000);
+              
+              // 在后台调用云函数分析配料表
               uniCloud.callFunction({
                 name: 'imgUploadAndAnalyze',
                 data: {
-                  fileID: fileID, // 只传递fileID，让云函数直接从云存储获取
-                  openid: openid  // 传递用户openid
+                  fileID: fileID,
+                  openid: openid
                 },
                 success: (callRes) => {
                   console.log('分析结果:', callRes.result);
                   
-                  // 分析完成，准备完整数据
-                  if (callRes.result && callRes.result.code === 0) {
-                    // 准备传递给result页面的完整数据
-                    const completeData = {
-                      analysis: callRes.result.data,
-                      imageId: fileID,
-                      analysisId: callRes.result.analysis_id || '',
-                      from: 'camera'
-                    };
-                    
-                    // 缓存完整数据
-                    uni.setStorageSync('completeAnalysisData', completeData);
+                  // 分析完成后，从临时列表中移除
+                  const updatedPendingList = uni.getStorageSync('pendingAnalyses') || [];
+                  const index = updatedPendingList.findIndex(item => item.fileID === fileID);
+                  if (index > -1) {
+                    updatedPendingList.splice(index, 1);
+                    uni.setStorageSync('pendingAnalyses', updatedPendingList);
                   }
                   
-                  // 隐藏加载提示
-                  uni.hideLoading();
-                  
-                  // 跳转到结果页
-                  uni.navigateTo({
-                    url: `/pages/result/result?from=camera`
-                  });
+                  // 无需进一步处理，数据库记录会通过home页面的刷新加载
                 },
                 fail: (err) => {
                   console.error('分析配料表失败:', err);
                   
-                  // 即使分析失败也要跳转，结果页可以再次尝试分析
-                  uni.hideLoading();
-                  uni.showToast({
-                    title: '分析失败，请稍后再试',
-                    icon: 'none',
-                    duration: 2000
-                  });
-                  
-                  // 准备错误数据
-                  const errorData = {
-                    imageId: fileID,
-                    error: true,
-                    errorMsg: '分析失败，请重试'
-                  };
-                  
-                  // 缓存错误数据
-                  uni.setStorageSync('completeAnalysisData', errorData);
-                  
-                  setTimeout(() => {
-                    uni.navigateTo({
-                      url: `/pages/result/result?from=camera&error=true`
-                    });
-                  }, 2000);
+                  // 分析失败后，更新临时列表中的状态
+                  const updatedPendingList = uni.getStorageSync('pendingAnalyses') || [];
+                  const index = updatedPendingList.findIndex(item => item.fileID === fileID);
+                  if (index > -1) {
+                    updatedPendingList[index].analysis.scoreTitle = '分析失败';
+                    updatedPendingList[index].analysis.scoreDesc = '请重新尝试';
+                    uni.setStorageSync('pendingAnalyses', updatedPendingList);
+                  }
                 }
               });
             },

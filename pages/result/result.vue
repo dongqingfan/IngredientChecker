@@ -53,7 +53,7 @@
       </view>
       
       <!-- 健康建议 -->
-<!--      <view class="detail-section">
+     <view class="detail-section">
         <view class="detail-title">
           <text class="iconfont icon-heart"></text>
           <text>健康建议</text>
@@ -66,7 +66,7 @@
           <text class="card-title">适宜人群</text>
           <text class="section-content">{{foodInfo.suitablePeople}}</text>
         </view>
-      </view> -->
+      </view>
     </scroll-view>
   </view>
 </template>

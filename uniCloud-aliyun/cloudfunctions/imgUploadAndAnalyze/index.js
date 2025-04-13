@@ -131,6 +131,7 @@ JSON格式如下：
 {
   "score": 75,
   "scoreTitle": "中等安全性",
+  "scoreDesc": "简要描述产品安全性",
   "ingredients": [
     {
       "name": "成分1名称"
@@ -138,7 +139,9 @@ JSON格式如下：
     {
       "name": "成分2名称"
     }
-  ]
+  ],
+  "nutritionDesc": "营养描述",
+  "suitablePeople": "适宜人群"
 }
 
 再次提醒：

@@ -19,6 +19,27 @@
         />
       </view>
       
+      <!-- 待处理分析记录 -->
+      <view class="card" v-if="pendingAnalyses.length > 0">
+        <view class="card-title">正在分析</view>
+        <view class="pending-list">
+          <view 
+            class="history-item" 
+            v-for="(item, index) in pendingAnalyses" 
+            :key="'pending-'+index"
+          >
+            <image :src="item.image" class="history-img" mode="aspectFill"></image>
+            <view class="history-info">
+              <text class="history-title">{{item.name || '分析中...'}}</text>
+              <text class="history-date">{{item.date}}</text>
+            </view>
+            <view class="pending-status">
+              <view class="loading-spinner small"></view>
+            </view>
+          </view>
+        </view>
+      </view>
+      
       <!-- 历史记录 -->
       <view class="card">
         <view class="card-title">最近扫描</view>
@@ -30,7 +51,7 @@
         </view>
         
         <!-- 空状态提示 -->
-        <view class="empty-state" v-else-if="historyList.length === 0">
+        <view class="empty-state" v-else-if="historyList.length === 0 && pendingAnalyses.length === 0">
           <image src="/static/images/empty.svg" mode="aspectFit" class="empty-image"></image>
           <text class="empty-text">暂无分析记录</text>
           <text class="empty-subtext">拍摄食品配料表，了解食品安全</text>
@@ -75,6 +96,7 @@ export default {
     return {
       searchText: '',
       historyList: [],
+      pendingAnalyses: [],
       loading: false
     }
   },
@@ -85,8 +107,140 @@ export default {
   onShow() {
     // 每次页面显示时刷新数据
     this.loadHistoryData();
+    // 加载待处理的分析
+    this.loadPendingAnalyses();
+    // 设置定时检查
+    this.startPendingCheck();
+  },
+  onHide() {
+    // 清除定时器
+    if (this.pendingCheckInterval) {
+      clearInterval(this.pendingCheckInterval);
+    }
   },
   methods: {
+    // 加载待处理的分析
+    loadPendingAnalyses() {
+      try {
+        const pendingList = uni.getStorageSync('pendingAnalyses') || [];
+        this.pendingAnalyses = pendingList;
+        console.log('待处理分析数:', this.pendingAnalyses.length);
+      } catch (error) {
+        console.error('加载待处理分析失败:', error);
+        this.pendingAnalyses = [];
+      }
+    },
+    
+    // 设置定时检查
+    startPendingCheck() {
+      // 先清除可能存在的定时器
+      if (this.pendingCheckInterval) {
+        clearInterval(this.pendingCheckInterval);
+      }
+      
+      // 每10秒检查一次待处理状态
+      if (this.pendingAnalyses.length > 0) {
+        this.pendingCheckInterval = setInterval(() => {
+          this.checkPendingStatus();
+        }, 10000);
+      }
+    },
+    
+    // 检查待处理分析的状态
+    async checkPendingStatus() {
+      try {
+        if (this.pendingAnalyses.length === 0) {
+          clearInterval(this.pendingCheckInterval);
+          return;
+        }
+        
+        // 首先检查本地存储是否有更新
+        const updatedPendingList = uni.getStorageSync('pendingAnalyses') || [];
+        
+        // 如果本地存储中的pendingAnalyses为空或变少，说明有项目处理完成了
+        if (updatedPendingList.length < this.pendingAnalyses.length) {
+          const completedCount = this.pendingAnalyses.length - updatedPendingList.length;
+          console.log(`检测到${completedCount}个分析已完成`);
+          
+          // 更新本地列表
+          this.pendingAnalyses = updatedPendingList;
+          
+          // 如果有已完成项目，刷新历史记录并显示提示
+          if (completedCount > 0) {
+            // 刷新历史记录
+            this.loadHistoryData();
+            
+            // 显示提示
+            uni.showToast({
+              title: '分析完成',
+              icon: 'success'
+            });
+          }
+          
+          // 如果没有待处理项了，清除定时器
+          if (this.pendingAnalyses.length === 0) {
+            clearInterval(this.pendingCheckInterval);
+          }
+          
+          return;
+        }
+        
+        // 如果本地存储中的pendingAnalyses有变化但数量没减少，也更新本地显示
+        if (JSON.stringify(updatedPendingList) !== JSON.stringify(this.pendingAnalyses)) {
+          this.pendingAnalyses = updatedPendingList;
+        }
+        
+        // 获取所有待处理文件的ID
+        const fileIDs = this.pendingAnalyses.map(item => item.fileID).filter(Boolean);
+        if (fileIDs.length === 0) return;
+        
+        // 查询数据库检查是否有已完成的记录
+        const db = uniCloud.database();
+        const { result } = await db.collection('ingredient_analyses')
+          .where({
+            fileID: db.command.in(fileIDs)
+          })
+          .get();
+          
+        const completedItems = result.data || [];
+        
+        // 如果找到已完成的记录
+        if (completedItems.length > 0) {
+          let hasNewCompletedItems = false;
+          let updatedPending = [...this.pendingAnalyses];
+          
+          completedItems.forEach(item => {
+            // 只处理已完成的记录
+            if (item.status === 'completed' || !item.status) {
+              // 从待处理列表中移除
+              const index = updatedPending.findIndex(p => p.fileID === item.fileID);
+              if (index > -1) {
+                updatedPending.splice(index, 1);
+                hasNewCompletedItems = true;
+              }
+            }
+          });
+          
+          // 更新待处理列表
+          if (hasNewCompletedItems) {
+            this.pendingAnalyses = updatedPending;
+            uni.setStorageSync('pendingAnalyses', updatedPending);
+            
+            // 刷新历史记录
+            this.loadHistoryData();
+            
+            // 显示提示
+            uni.showToast({
+              title: '分析完成',
+              icon: 'success'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('检查待处理分析状态失败:', error);
+      }
+    },
+    
     // 加载历史分析数据
     async loadHistoryData() {
       try {
@@ -529,5 +683,25 @@ export default {
     width: 100%;
     height: 100%;
   }
+}
+
+.loading-spinner.small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #4CAF50;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.pending-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+}
+
+.pending-list {
+  margin-bottom: 16px;
 }
 </style> 
