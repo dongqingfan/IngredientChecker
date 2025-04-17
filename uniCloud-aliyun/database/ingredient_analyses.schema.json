@@ -78,6 +78,15 @@
 				}
 			}
 		},
+		"processed": {
+			"bsonType": "bool",
+			"description": "配料是否已被处理分析",
+			"defaultValue": false
+		},
+		"processedAt": {
+			"bsonType": "timestamp",
+			"description": "配料处理时间"
+		},
 		"createdAt": {
 			"bsonType": "timestamp",
 			"description": "创建时间"

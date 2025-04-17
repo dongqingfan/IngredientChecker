@@ -15,13 +15,37 @@
 // const endDate = new Date('2025-04-13T00:00:00Z');
 
 // db.collection('ingredient_analyses')
-//   .where({
-//     createdAt: {
-//       $gte: startDate,
-//       $lt: endDate
-//     }
-//   })
 //   .orderBy('createdAt desc')
 //   .get();
 
- db.collection('settings').limit(1).get()
+ //db.collection('settings').limit(1).get()
+
+ //db.collection('ingredient_analyses');
+ 
+ // // 获取数据库对象
+ // const db = uniCloud.database();
+ 
+ // // 查询ingredient_analyses表中的所有记录
+ // db.collection('ingredient_analyses')
+ //   .limit(10)
+ //   .get()
+
+
+// db.collection('ingredient_analyses')
+//   .field('analysis.ingredients.name,id')
+//   .get();
+
+// // 删除ID为67ef49c089bd274d1911bfed的记录
+// db.collection('ingredient_analyses')
+//   .where({
+//     _id: '67ef4a5bfe975f827a50898f'
+//   })
+//   .remove()
+
+db.collection('ingredients').remove()
+
+// 将所有ingredient_analyses记录的processed字段更新为false
+// db.collection('ingredient_analyses')
+//   .update({
+//     processed: false
+//   })

@@ -44,10 +44,10 @@
             :key="index"
           >
             <text class="ingredient-name">{{item.name}}</text>
-          <!--  <text class="ingredient-function">{{item.description}}</text>
+           <text class="ingredient-function">{{item.category}}</text>
             <view class="ingredient-safety" :class="item.riskLevel">
               {{item.riskLevel === 'high' ? '风险' : item.riskLevel === 'medium' ? '谨慎' : '安全'}}
-            </view> -->
+            </view>
           </view>
         </view>
       </view>

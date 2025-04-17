@@ -1,0 +1,11 @@
+{
+  "timeout": 180,
+  "memorySize": 512,
+  "triggers": [
+    {
+      "name": "processIngredientsTrigger",
+      "type": "timer",
+      "config": "*/3 * * * *"
+    }
+  ]
+} 

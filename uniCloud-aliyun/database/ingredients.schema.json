@@ -1,0 +1,82 @@
+{
+	"bsonType": "object",
+	"required": ["name"],
+	"permission": {
+		"read": true,
+		"create": "auth.uid != null",
+		"update": "doc.createdBy == auth.uid",
+		"delete": "doc.createdBy == auth.uid"
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"name": {
+			"bsonType": "string",
+			"description": "配料名称",
+			"trim": "both",
+			"minLength": 1
+		},
+		"safety_status": {
+			"bsonType": "string",
+			"description": "安全状态：危险/安全",
+			"trim": "both"
+		},
+		"functions": {
+			"bsonType": "string",
+			"description": "主要用途(说明食品中为什么要添加这个)"
+		},
+		"category": {
+			"bsonType": "string",
+			"description": "配料分类，如'调味料-甜味剂'",
+			"trim": "both"
+		},
+		"regulations": {
+			"bsonType": "array",
+			"description": "违规地区及条款列表",
+			"items": {
+				"bsonType": "string"
+			}
+		},
+		"processed": {
+			"bsonType": "bool",
+			"description": "是否已处理",
+			"defaultValue": true
+		},
+		"processingError": {
+			"bsonType": "bool",
+			"description": "处理过程中是否发生错误",
+			"defaultValue": false
+		},
+		"aiError": {
+			"bsonType": "bool",
+			"description": "AI分析是否出错",
+			"defaultValue": false
+		},
+		"aiRawResponse": {
+			"bsonType": "string",
+			"description": "AI原始响应（仅在发生错误时保存）"
+		},
+		"createdAt": {
+			"bsonType": "timestamp",
+			"description": "创建时间",
+			"defaultValue": {
+				"$env": "now"
+			}
+		},
+		"updatedAt": {
+			"bsonType": "timestamp",
+			"description": "更新时间",
+			"defaultValue": {
+				"$env": "now"
+			}
+		},
+		"createdBy": {
+			"bsonType": "string",
+			"description": "创建者ID，参考uni-id-users表",
+			"forceDefaultValue": {
+				"$env": "uid"
+			}
+		}
+	}
+} 
