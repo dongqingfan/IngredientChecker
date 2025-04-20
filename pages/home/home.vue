@@ -396,16 +396,24 @@ export default {
                 ingredientMap[ing.name] = ing;
               });
               
+              // 标记是否有危险成分
+              let hasDangerousIngredient = false;
+              
               // 更新配料数组中的每个配料信息
               completeData.analysis.ingredients = completeData.analysis.ingredients.map(ing => {
                 // 如果在ingredients表中找到了对应的配料信息
                 if (ingredientMap[ing.name]) {
                   const detailedInfo = ingredientMap[ing.name];
                   
+                  // 检查是否是危险成分
+                  if (detailedInfo.safety_status === '危险' || ing.riskLevel === 'high') {
+                    hasDangerousIngredient = true;
+                  }
+                  
                   // 返回填充了详细信息的配料对象
                   return {
                     name: ing.name,
-                    riskLevel: ing.riskLevel || (detailedInfo.safety_status === '危险' ? 'high' : 
+                    riskLevel: (detailedInfo.safety_status === '危险' ? 'high' : 
                                detailedInfo.safety_status === '安全' ? 'low' : 'medium'),
                     category: detailedInfo.category || ing.category || '',
                     usage: detailedInfo.functions || ing.usage || '',
@@ -414,11 +422,23 @@ export default {
                   };
                 }
                 
+                // 如果没有找到详细信息但标记为高风险
+                if (ing.riskLevel === 'high') {
+                  hasDangerousIngredient = true;
+                }
+                
                 // 如果没找到对应的详细信息，保持原样
                 return ing;
               });
               
-              console.log('配料信息填充完成');
+              // 根据是否有危险成分设置分数
+              if (hasDangerousIngredient) {
+                completeData.analysis.score = 0;
+              } else {
+                completeData.analysis.score = 100;
+              }
+              
+              console.log('配料信息填充完成，安全分数已更新为:', completeData.analysis.score);
             } else {
               console.log('未查询到配料详细信息');
             }
@@ -428,7 +448,23 @@ export default {
           }
         }
 
-        console.log('======准备传递给result页面的完整数据======', completeData);
+        if (completeData.analysisId) {
+          try {
+            const db = uniCloud.database();
+            
+            // 直接使用completeData.analysis更新整个analysis对象
+            await db.collection('ingredient_analyses')
+              .doc(completeData.analysisId)
+              .update({
+                analysis: completeData.analysis
+              });
+            
+            console.log('已将更新后的分析结果同步到数据库');
+          } catch (dbError) {
+            console.error('更新数据库分数失败:', dbError);
+          }
+        }
+            
         
         // 缓存完整数据
         uni.setStorageSync('completeAnalysisData', completeData);

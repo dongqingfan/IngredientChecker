@@ -23,7 +23,11 @@
       <!-- 安全评分卡片 -->
       <view class="summary-card">
         <view class="star-rating">
-          <image src="/static/images/star.svg" mode="aspectFit" class="star"></image>
+          <image 
+            :src="'/static/icon/' + (foodInfo.score === 0 ? 'high.png' : foodInfo.score === 100 ? 'low.png' : 'medium.png')" 
+            mode="aspectFit" 
+            class="star"
+          ></image>
         </view>
         <view class="summary-info">
           <text class="summary-title">{{foodInfo.scoreTitle}}</text>
@@ -42,6 +46,7 @@
             class="ingredient-item"
             v-for="(item, index) in foodInfo.ingredients"
             :key="index"
+            @tap="showIngredientDetail(item)"
           >
             <text class="ingredient-name">{{item.name}}</text>
            <text class="ingredient-function">{{item.category}}</text>
@@ -68,6 +73,34 @@
         </view>
       </view>
     </scroll-view>
+
+    <!-- 配料详情模态窗口 -->
+    <view class="ingredient-modal" v-if="showModal">
+      <view class="modal-mask" @tap="hideIngredientDetail"></view>
+      <view class="modal-content">
+        <view class="modal-header">
+          <text class="modal-title">{{currentIngredient.name}}</text>
+          <text class="modal-close" @tap="hideIngredientDetail">×</text>
+        </view>
+        
+        <view class="modal-body">
+          <view class="detail-item">
+            <text class="detail-label">成分类别</text>
+            <text class="detail-value">{{currentIngredient.category || '未知'}}</text>
+          </view>
+          
+          <view class="detail-item">
+            <text class="detail-label">主要用途</text>
+            <text class="detail-value">{{currentIngredient.usage || currentIngredient.description || '未知'}}</text>
+          </view>
+          
+          <view class="detail-item" v-if="currentIngredient.risks">
+            <text class="detail-label">可能风险</text>
+            <text class="detail-value">{{currentIngredient.risks}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -89,7 +122,9 @@ export default {
         ingredients: []
       },
       analysisData: {},
-      _checkedFavoriteInLoad: false
+      _checkedFavoriteInLoad: false,
+      showModal: false,
+      currentIngredient: {}
     }
   },
   onLoad(options) {
@@ -482,6 +517,13 @@ export default {
           this.isFavorite = false;
         }
       });
+    },
+    showIngredientDetail(item) {
+      this.currentIngredient = item;
+      this.showModal = true;
+    },
+    hideIngredientDetail() {
+      this.showModal = false;
     }
   }
 }
@@ -762,6 +804,136 @@ export default {
 }
 
 .ingredient-modal {
-  display: none; /* Hide the modal */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 680rpx;
+  background-color: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 2;
+  position: relative;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  padding: 18px;
+  background-color: #fff;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 22px;
+  color: #999;
+  width: 28px;
+  height: 28px;
+  line-height: 26px;
+  text-align: center;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.detail-item {
+  margin-bottom: 14px;
+  border-bottom: 1px solid #f2f2f2;
+  padding-bottom: 14px;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detail-label {
+  display: block;
+  font-size: 15px;
+  color: #999;
+  margin-bottom: 6px;
+}
+
+.detail-value {
+  display: block;
+  font-size: 16px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.safety-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-weight: bold;
+  font-size: 14px;
+  
+  &.low {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #2E7D32;
+  }
+  
+  &.medium {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #F57F17;
+  }
+  
+  &.high {
+    background-color: rgba(244, 67, 54, 0.15);
+    color: #D32F2F;
+  }
+}
+
+.usage-suggestions {
+  background-color: #f9f9f9;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.suggestion-list {
+  margin-top: 8px;
+}
+
+.suggestion-item {
+  display: block;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 6px;
+  line-height: 1.4;
 }
 </style> 
