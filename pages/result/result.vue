@@ -21,23 +21,43 @@
       </view>
       
       <!-- 安全评分卡片 -->
-      <view class="summary-card">
-        <view class="star-rating">
-          <image 
-            :src="'/static/icon/' + (foodInfo.score === 0 ? 'high.png' : foodInfo.score === 100 ? 'low.png' : 'medium.png')" 
-            mode="aspectFit" 
-            class="star"
-          ></image>
-        </view>
-        <view class="summary-info">
-          <view class="title-with-image">
-            <text class="summary-title">{{foodInfo.scoreTitle}}</text>
-            <view class="product-image-preview" @tap.stop="openImageBrowser">
-              <image :src="productImageID || '/static/images/placeholder.jpg'" mode="aspectFill" class="preview-thumb"></image>
+      <view class="summary-card" :class="{'error-card': isErrorState}">
+        <!-- 错误状态显示 -->
+        <template v-if="isErrorState">
+          <view class="error-content">
+            <view class="error-icon-container">
+              <image src="/static/icon/error-face.png" mode="aspectFit" class="error-icon"></image>
+            </view>
+            <view class="error-message">
+              <text class="error-title">{{foodInfo.scoreTitle}}</text>
+              <text class="error-desc" v-if="foodInfo.scoreDesc">{{foodInfo.scoreDesc}}</text>
             </view>
           </view>
-     <!--     <text class="summary-desc">{{foodInfo.scoreDesc}}</text> -->
-        </view>
+          <!-- 产品图片 -->
+          <view class="product-preview" v-if="productImageID" @tap.stop="openImageBrowser">
+            <image :src="productImageID" mode="aspectFill" class="product-img"></image>
+          </view>
+        </template>
+        
+        <!-- 正常状态显示 -->
+        <template v-else>
+          <view class="star-rating">
+            <image 
+              :src="'/static/icon/' + (foodInfo.score === 100 ? 'low.png' : foodInfo.score === 0 ? 'high.png' : 'medium.png')" 
+              mode="aspectFit" 
+              class="star"
+            ></image>
+          </view>
+          <view class="summary-info">
+            <view class="title-with-image">
+              <text class="summary-title">{{foodInfo.scoreTitle}}</text>
+              <view class="product-image-preview" @tap.stop="openImageBrowser">
+                <image :src="productImageID || '/static/images/placeholder.jpg'" mode="aspectFill" class="preview-thumb"></image>
+              </view>
+            </view>
+            <!-- <text class="summary-desc" v-if="foodInfo.scoreDesc">{{foodInfo.scoreDesc}}</text> -->
+          </view>
+        </template>
       </view>
       
       <!-- 配料列表 -->
@@ -176,6 +196,17 @@ export default {
       currentIngredient: {},
       showImageBrowser: false,
       currentImageIndex: 0
+    }
+  },
+  computed: {
+    // 判断是否为错误状态
+    isErrorState() {
+      const errorTitles = [
+        '无法分析配料表', 
+        '无法识别配料表',
+        '配料表分析失败'
+      ];
+      return errorTitles.some(title => this.foodInfo.scoreTitle.includes(title));
     }
   },
   onLoad(options) {
@@ -749,11 +780,70 @@ export default {
   margin-bottom: 4vw;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   box-sizing: border-box;
 }
 
+/* 错误状态卡片样式 */
+.error-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.error-icon-container {
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.error-icon {
+  width: 50px;
+  height: 50px;
+}
+
+.error-message {
+  flex: 1;
+}
+
+.error-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #e53935;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.error-desc {
+  font-size: 14px;
+  color: #666;
+  display: block;
+  line-height: 1.4;
+}
+
+.product-preview {
+  align-self: center;
+  margin-top: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.product-img {
+  width: 200px;
+  height: 150px;
+  background-color: #f5f5f5;
+}
+
+/* 正常状态样式 */
 .star-rating {
   position: relative;
   display: flex;
@@ -761,6 +851,7 @@ export default {
   align-items: center;
   margin-right: 30px;
   margin-left: 10px;
+  min-width: 55px;
 }
 
 .star {
@@ -779,13 +870,16 @@ export default {
 
 .summary-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .title-with-image {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  width: 100%;
 }
 
 .summary-title {
@@ -793,11 +887,14 @@ export default {
   font-weight: bold;
   color: #333;
   flex: 1;
+  padding-right: 15px;
+  word-break: break-word;
 }
 
 .product-image-preview {
   position: relative;
   margin-left: 10px;
+  flex-shrink: 0;
 }
 
 .preview-thumb {
@@ -806,6 +903,7 @@ export default {
   border-radius: 8px;
   border: 1px solid #eee;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f9f9f9;
 }
 
 .preview-badge {
@@ -824,6 +922,10 @@ export default {
   color: #333;
   font-size: 15px;
   line-height: 1.5;
+  margin-top: 5px;
+  clear: both;
+  width: 100%;
+  word-break: break-word;
 }
 
 .detail-section {
@@ -926,24 +1028,24 @@ export default {
 .detail-card {
   background-color: #f9f9f9;
   border-radius: 8px;
-  padding: 16px; /* 增加内边距，从12px改为16px */
-  margin-bottom: 16px; /* 增加卡片间距，从12px改为16px */
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
 .card-title {
   font-size: 15px;
   font-weight: bold;
-  margin-bottom: 12px; /* 增加标题与内容间距，从8px改为12px */
+  margin-bottom: 12px;
   color: #333;
-  display: block; /* 确保标题是块级元素，独占一行 */
+  display: block;
 }
 
 .section-content {
   font-size: 14px;
   color: #666;
-  line-height: 1.6; /* 增加行高，从1.5改为1.6 */
-  display: block; /* 确保内容是块级元素 */
-  white-space: pre-line; /* 保留文本中的换行符 */
+  line-height: 1.6;
+  display: block;
+  white-space: pre-line;
 }
 
 .tab-bar {
@@ -1091,7 +1193,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999; /* 提高z-index确保显示在最上层 */
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;

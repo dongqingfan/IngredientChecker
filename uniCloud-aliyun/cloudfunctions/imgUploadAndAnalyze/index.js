@@ -222,6 +222,13 @@ JSON格式如下：
 				let messageContent = ingredientResponse.data.choices[0].message.content;
 				console.log('配料表AI返回内容:', messageContent);
 				
+				// 检查是否包含JSON数据（至少要包含一对大括号）
+				if (!messageContent.includes('{') || !messageContent.includes('}')) {
+					// 如果没有大括号，说明AI返回了纯文本而非JSON
+					console.log('AI返回了纯文本而非JSON，将构造默认响应');
+					throw new Error('AI返回非JSON格式回复: ' + messageContent.substring(0, 100) + '...');
+				}
+				
 				// 修复常见的JSON格式问题
 				messageContent = messageContent
 					// 提取JSON的核心内容，移除markdown标记和注释
@@ -254,8 +261,22 @@ JSON格式如下：
 				console.log('最终清理后的配料表JSON:', messageContent);
 				
 				// 尝试解析JSON
-				const jsonData = JSON.parse(messageContent);
-				console.log('解析后的配料表JSON数据:', jsonData);
+				let jsonData;
+				try {
+					jsonData = JSON.parse(messageContent);
+					console.log('解析后的配料表JSON数据:', jsonData);
+				} catch (parseError) {
+					console.error('JSON解析错误:', parseError);
+					// 构建一个包含错误信息的响应对象
+					jsonData = {
+						score: 0,
+						scoreTitle: '无法识别配料表',
+						scoreDesc: '图片中的配料表不清晰或格式不规范，无法进行分析',
+						ingredients: [],
+						nutritionDesc: '请上传更清晰的配料表图片',
+						suitablePeople: '无法确定适宜人群'
+					};
+				}
 				
 				// 重构数据，确保所有必要字段存在
 				ingredientData = {
@@ -328,6 +349,13 @@ JSON格式如下：
 				let messageContent = productResponse.data.choices[0].message.content;
 				console.log('商品名称AI返回内容:', messageContent);
 				
+				// 检查是否包含JSON数据（至少要包含一对大括号）
+				if (!messageContent.includes('{') || !messageContent.includes('}')) {
+					// 如果没有大括号，说明AI返回了纯文本而非JSON
+					console.log('商品名称AI返回了纯文本而非JSON，将构造默认响应');
+					throw new Error('AI返回非JSON格式回复: ' + messageContent.substring(0, 100) + '...');
+				}
+				
 				// 修复常见的JSON格式问题
 				messageContent = messageContent
 					.replace(/```json\s+|\s+```/g, '')
@@ -351,8 +379,19 @@ JSON格式如下：
 				console.log('最终清理后的商品名称JSON:', messageContent);
 				
 				// 尝试解析JSON
-				const jsonData = JSON.parse(messageContent);
-				console.log('解析后的商品名称JSON数据:', jsonData);
+				let jsonData;
+				try {
+					jsonData = JSON.parse(messageContent);
+					console.log('解析后的商品名称JSON数据:', jsonData);
+				} catch (parseError) {
+					console.error('商品名称JSON解析错误:', parseError);
+					// 使用默认值
+					jsonData = {
+						productName: '未知产品',
+						brandName: '',
+						productType: ''
+					};
+				}
 				
 				// 提取商品信息
 				productData = {

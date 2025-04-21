@@ -172,7 +172,7 @@ export default {
       // 压缩图片
       uni.compressImage({
         src: imagePath,
-        quality: 60,
+        quality: 80,
         compressedWidth: 800,
         success: (res) => {
           // 获取当前日期
