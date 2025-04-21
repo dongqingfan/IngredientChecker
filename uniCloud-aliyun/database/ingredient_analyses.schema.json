@@ -1,6 +1,6 @@
 {
 	"bsonType": "object",
-	"required": ["fileID", "analysis", "createdAt"],
+	"required": ["productIngredientID", "productImageID", "analysis", "createdAt"],
 	"permission": {
 		"read": true,
 		"create": true,
@@ -11,9 +11,25 @@
 		"_id": {
 			"description": "ID，系统自动生成"
 		},
-		"fileID": {
+		"productIngredientID": {
 			"bsonType": "string",
-			"description": "云存储中的图片文件ID"
+			"description": "配料表图片的云存储文件ID"
+		},
+		"productImageID": {
+			"bsonType": "string",
+			"description": "商品图片的云存储文件ID"
+		},
+		"productName": {
+			"bsonType": "string",
+			"description": "商品名称"
+		},
+		"brandName": {
+			"bsonType": "string",
+			"description": "品牌名称"
+		},
+		"productType": {
+			"bsonType": "string",
+			"description": "产品类型，如饼干、饮料等"
 		},
 		"openid": {
 			"bsonType": "string",

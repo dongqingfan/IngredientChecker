@@ -42,10 +42,49 @@
 //   })
 //   .remove()
 
-db.collection('ingredients').remove()
+//db.collection('ingredients').remove()
 
 // 将所有ingredient_analyses记录的processed字段更新为false
 // db.collection('ingredient_analyses')
 //   .update({
 //     processed: false
 //   })
+
+// 删除ingredient_analyses表中除了最新一条记录外的所有数据
+// 首先获取数据库和命令对象
+// const db = uniCloud.database()
+// const cmd = db.command
+// 
+// // 1. 查询最新的一条记录获取ID
+// db.collection('ingredient_analyses')
+//   .orderBy('createdAt', 'desc')
+//   .limit(1)
+//   .get()
+//   .then(res => {
+//     if (res.data && res.data.length > 0) {
+//       const latestId = res.data[0]._id
+//       console.log('保留的记录ID:', latestId)
+//       
+//       // 2. 删除所有不等于最新ID的记录
+//       return db.collection('ingredient_analyses')
+//         .where({
+//           _id: cmd.neq(latestId)
+//         })
+//         .remove()
+//     } else {
+//       console.log('表中没有数据')
+//     }
+//   })
+//   .then(res => {
+//     if (res) {
+//       console.log('删除结果:', res)
+//     }
+//   })
+//   .catch(err => {
+//     console.error('操作失败:', err)
+//   })
+
+// 删除ingredient_analyses表中所有记录
+//db.collection('ingredient_analyses').remove()
+
+db.collection('user_favorites').remove()

@@ -30,7 +30,12 @@
           ></image>
         </view>
         <view class="summary-info">
-          <text class="summary-title">{{foodInfo.scoreTitle}}</text>
+          <view class="title-with-image">
+            <text class="summary-title">{{foodInfo.scoreTitle}}</text>
+            <view class="product-image-preview" @tap.stop="openImageBrowser">
+              <image :src="productImageID || '/static/images/placeholder.jpg'" mode="aspectFill" class="preview-thumb"></image>
+            </view>
+          </view>
      <!--     <text class="summary-desc">{{foodInfo.scoreDesc}}</text> -->
         </view>
       </view>
@@ -101,6 +106,45 @@
         </view>
       </view>
     </view>
+    
+    <!-- 图片浏览模态窗口 -->
+    <view class="image-browser-modal" v-if="showImageBrowser">
+      <view class="modal-mask" @tap="hideImageBrowser"></view>
+      <view class="modal-image-content">
+        <view class="image-browser-header">
+          <text class="image-browser-title">{{currentImageIndex === 0 ? '商品图片' : '配料表图片'}}</text>
+          <text class="modal-close" @tap="hideImageBrowser">×</text>
+        </view>
+        
+        <swiper class="image-swiper" :current="currentImageIndex" @change="swiperChange">
+          <swiper-item>
+            <image 
+              :src="productImageID || '/static/images/placeholder.jpg'" 
+              mode="aspectFit" 
+              class="fullscreen-image"
+            ></image>
+          </swiper-item>
+          <swiper-item>
+            <image 
+              :src="productIngredientID || '/static/images/placeholder.jpg'" 
+              mode="aspectFit" 
+              class="fullscreen-image"
+            ></image>
+          </swiper-item>
+        </swiper>
+        
+        <view class="image-indicators">
+          <view 
+            class="indicator-dot" 
+            v-for="(_, index) in 2" 
+            :key="index"
+            :class="{'active': currentImageIndex === index}"
+          ></view>
+        </view>
+        
+        <view class="swipe-hint">左右滑动切换图片</view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -111,6 +155,11 @@ export default {
       isFavorite: false,
       imageId: '',
       analysisId: '',
+      productName: '',
+      brandName: '',
+      productType: '',
+      productImageID: '',
+      productIngredientID: '',
       foodInfo: {
         name: '加载中...',
         score: 0,
@@ -124,7 +173,9 @@ export default {
       analysisData: {},
       _checkedFavoriteInLoad: false,
       showModal: false,
-      currentIngredient: {}
+      currentIngredient: {},
+      showImageBrowser: false,
+      currentImageIndex: 0
     }
   },
   onLoad(options) {
@@ -139,6 +190,15 @@ export default {
       // 设置页面数据
       this.imageId = completeData.imageId || '';
       this.analysisId = completeData.analysisId || '';
+      
+      // 保存商品信息
+      this.productName = completeData.productName || '';
+      this.brandName = completeData.brandName || '';
+      this.productType = completeData.productType || '';
+      
+      // 保存图片ID
+      this.productImageID = completeData.productImageID || '';
+      this.productIngredientID = completeData.productIngredientID || '';
       
       // 如果有收藏状态，直接设置
       if (completeData.isFavorite !== undefined) {
@@ -216,7 +276,8 @@ export default {
         }
         
         // 将分析结果转换为页面显示数据
-        this.foodInfo.name = analysis.scoreTitle || '未知产品';
+        // 优先使用从completeData获取的商品名称，其次是分析结果中的评分标题
+        this.foodInfo.name = this.productName || analysis.scoreTitle || '未知产品';
         
         // 处理评分
         this.foodInfo.score = analysis.score || 0;
@@ -524,6 +585,61 @@ export default {
     },
     hideIngredientDetail() {
       this.showModal = false;
+    },
+    
+    // 图片浏览相关方法
+    showImageBrowser() {
+      console.log('显示图片浏览器');
+      this.currentImageIndex = 0; // 默认显示商品图片
+      this.showImageBrowser = true;
+    },
+    hideImageBrowser() {
+      this.showImageBrowser = false;
+    },
+    swiperChange(e) {
+      this.currentImageIndex = e.detail.current;
+    },
+    // 使用uni.previewImage替代自定义模态窗口
+    openImageBrowser() {
+      console.log('openImageBrowser 被调用，准备预览图片');
+      
+      // 创建图片数组
+      const urls = [];
+      
+      // 添加商品图片
+      if(this.productImageID) {
+        urls.push(this.productImageID);
+      }
+      
+      // 添加配料图片
+      if(this.productIngredientID) {
+        urls.push(this.productIngredientID);
+      }
+      
+      // 如果没有任何图片，显示提示并返回
+      if(urls.length === 0) {
+        uni.showToast({
+          title: '无可预览图片',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 调用uni的预览图片API
+      uni.previewImage({
+        urls: urls,
+        current: 0, // 默认显示第一张图片(商品图片)
+        success: () => {
+          console.log('图片预览成功打开');
+        },
+        fail: (err) => {
+          console.error('图片预览失败:', err);
+          uni.showToast({
+            title: '图片预览失败',
+            icon: 'none'
+          });
+        }
+      });
     }
   }
 }
@@ -665,12 +781,43 @@ export default {
   flex: 1;
 }
 
+.title-with-image {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
 .summary-title {
   font-size: 18px;
   font-weight: bold;
   color: #333;
-  margin-bottom: 4px;
-  display: block;
+  flex: 1;
+}
+
+.product-image-preview {
+  position: relative;
+  margin-left: 10px;
+}
+
+.preview-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.preview-badge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 .summary-desc {
@@ -935,5 +1082,85 @@ export default {
   color: #555;
   margin-bottom: 6px;
   line-height: 1.4;
+}
+
+/* 图片浏览器样式 */
+.image-browser-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999; /* 提高z-index确保显示在最上层 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-image-content {
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  z-index: 2;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.image-browser-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: var(--status-bar-height);
+}
+
+.image-browser-title {
+  color: white;
+  font-size: 16px;
+}
+
+.image-swiper {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.fullscreen-image {
+  width: 100%;
+  height: 100%;
+}
+
+.image-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.4);
+  margin: 0 4px;
+  transition: all 0.3s;
+}
+
+.indicator-dot.active {
+  width: 16px;
+  background-color: white;
+}
+
+.swipe-hint {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  text-align: center;
+  padding-bottom: 12px;
+  background-color: rgba(0, 0, 0, 0.7);
 }
 </style> 

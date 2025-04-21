@@ -42,7 +42,13 @@
       
       <!-- 历史记录 -->
       <view class="card">
-        <view class="card-title">最近扫描</view>
+        <view class="card-header">
+          <text class="card-title">最近扫描</text>
+          <view class="view-all" @tap="goToHistory">
+            <text>查看全部</text>
+            <text class="iconfont icon-right"></text>
+          </view>
+        </view>
         
         <!-- 加载状态 -->
         <view class="loading-container" v-if="loading">
@@ -191,14 +197,14 @@ export default {
         }
         
         // 获取所有待处理文件的ID
-        const fileIDs = this.pendingAnalyses.map(item => item.fileID).filter(Boolean);
-        if (fileIDs.length === 0) return;
+        const ingredientIDs = this.pendingAnalyses.map(item => item.fileID).filter(Boolean);
+        if (ingredientIDs.length === 0) return;
         
         // 查询数据库检查是否有已完成的记录
         const db = uniCloud.database();
         const { result } = await db.collection('ingredient_analyses')
           .where({
-            fileID: db.command.in(fileIDs)
+            productIngredientID: db.command.in(ingredientIDs)
           })
           .get();
           
@@ -213,7 +219,7 @@ export default {
             // 只处理已完成的记录
             if (item.status === 'completed' || !item.status) {
               // 从待处理列表中移除
-              const index = updatedPending.findIndex(p => p.fileID === item.fileID);
+              const index = updatedPending.findIndex(p => p.fileID === item.productIngredientID);
               if (index > -1) {
                 updatedPending.splice(index, 1);
                 hasNewCompletedItems = true;
@@ -257,7 +263,11 @@ export default {
         
         // 构建字段选择器，排除ingredients字段以减少数据量
         const field = {
-          fileID: true,
+          productIngredientID: true,
+          productImageID: true,
+          productName: true,
+          brandName: true,
+          productType: true,
           openid: true,
           createdAt: true,
           'analysis.score': true, 
@@ -298,14 +308,18 @@ export default {
             const date = new Date(item.createdAt);
             const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
             
-            // 从分析结果中获取产品名称 - 确保结果正确
-            const productName = item.analysis?.scoreTitle || '未知产品';
+            // 优先使用商品名称，如果没有则使用分析结果中的评分标题
+            const productName = item.productName || item.analysis?.scoreTitle || '未知产品';
             
             return {
               id: item._id,
-              fileID: item.fileID,
+              productIngredientID: item.productIngredientID,
+              productImageID: item.productImageID,
+              productName: item.productName || '',
+              brandName: item.brandName || '',
+              productType: item.productType || '',
               name: productName,
-              image: item.fileID || '/static/images/placeholder.jpg', // 使用fileID作为图片路径
+              image: item.productImageID || item.productIngredientID || '/static/images/placeholder.jpg', // 优先使用商品图片
               date: formattedDate,
               isFavorite: false, // 默认未收藏，后续可通过收藏表查询更新
               analysis: item.analysis
@@ -340,7 +354,7 @@ export default {
         // 更新收藏状态
         this.historyList.forEach(item => {
           const isFavorite = favorites.some(fav => 
-            fav.imageId === item.fileID || 
+            fav.imageId === item.productImageID || fav.imageId === item.productIngredientID || 
             (fav.scoreTitle === item.analysis?.scoreTitle && item.analysis?.scoreTitle !== '')
           );
           item.isFavorite = isFavorite;
@@ -356,6 +370,13 @@ export default {
       })
     },
     
+    // 跳转到历史记录页面
+    goToHistory() {
+      uni.navigateTo({
+        url: '/pages/history/history'
+      })
+    },
+    
     async goToResult(item) {
       try {
         // 先显示加载提示
@@ -366,7 +387,12 @@ export default {
         // 准备传递给result页面的完整数据
         const completeData = {
           analysis: item.analysis,
-          imageId: item.fileID,
+          imageId: item.productImageID || item.productIngredientID, // 优先使用商品图片ID
+          productIngredientID: item.productIngredientID,
+          productImageID: item.productImageID,
+          productName: item.productName || '',
+          brandName: item.brandName || '',
+          productType: item.productType || '',
           analysisId: item.id, // 数据库记录ID
           isFavorite: item.isFavorite
         };
@@ -492,7 +518,7 @@ export default {
         
         // 查找是否已收藏
         const index = favorites.findIndex(fav => 
-          fav.imageId === item.fileID || 
+          fav.imageId === item.productImageID || fav.imageId === item.productIngredientID || 
           (fav.scoreTitle === item.analysis?.scoreTitle && item.analysis?.scoreTitle !== '')
         );
         
@@ -507,7 +533,7 @@ export default {
         } else {
           // 未收藏，添加
           const favoriteItem = {
-            imageId: item.fileID,
+            imageId: item.productImageID || item.productIngredientID,
             scoreTitle: item.analysis?.scoreTitle || '',
             score: item.analysis?.score || 0,
             timestamp: new Date().getTime()
@@ -644,6 +670,25 @@ export default {
   font-weight: bold;
   margin-bottom: 12px;
   color: #333;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.view-all {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #4CAF50;
+  
+  .iconfont {
+    font-size: 12px;
+    margin-left: 2px;
+  }
 }
 
 .loading-container {
