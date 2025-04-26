@@ -132,7 +132,11 @@
       <view class="modal-mask" @tap="hideImageBrowser"></view>
       <view class="modal-image-content">
         <view class="image-browser-header">
-          <text class="image-browser-title">{{currentImageIndex === 0 ? '商品图片' : '配料表图片'}}</text>
+          <text class="image-browser-title">{{
+            currentImageIndex === 0 ? '商品图片' : 
+            currentImageIndex === 1 ? '配料表图片' : 
+            '营养成分表图片'
+          }}</text>
           <text class="modal-close" @tap="hideImageBrowser">×</text>
         </view>
         
@@ -151,12 +155,19 @@
               class="fullscreen-image"
             ></image>
           </swiper-item>
+          <swiper-item v-if="nutritionImageID">
+            <image 
+              :src="nutritionImageID || '/static/images/placeholder.jpg'" 
+              mode="aspectFit" 
+              class="fullscreen-image"
+            ></image>
+          </swiper-item>
         </swiper>
         
         <view class="image-indicators">
           <view 
             class="indicator-dot" 
-            v-for="(_, index) in 2" 
+            v-for="(_, index) in getImageCount()" 
             :key="index"
             :class="{'active': currentImageIndex === index}"
           ></view>
@@ -180,6 +191,7 @@ export default {
       productType: '',
       productImageID: '',
       productIngredientID: '',
+      nutritionImageID: '',
       foodInfo: {
         name: '加载中...',
         score: 0,
@@ -207,6 +219,14 @@ export default {
         '配料表分析失败'
       ];
       return errorTitles.some(title => this.foodInfo.scoreTitle.includes(title));
+    },
+    // 计算有多少张图片
+    imageCount() {
+      let count = 0;
+      if (this.productImageID) count++;
+      if (this.productIngredientID) count++;
+      if (this.nutritionImageID) count++;
+      return Math.max(count, 1); // 至少返回1，避免0的情况
     }
   },
   onLoad(options) {
@@ -230,6 +250,13 @@ export default {
       // 保存图片ID
       this.productImageID = completeData.productImageID || '';
       this.productIngredientID = completeData.productIngredientID || '';
+      this.nutritionImageID = completeData.nutritionImageID || '';
+      
+      // 如果有ID，查询完整数据以获取可能的nutritionImageID
+      if (completeData.id || completeData.analysisId) {
+        const dbId = completeData.id || completeData.analysisId;
+        this.getCompleteDataFromDB(dbId);
+      }
       
       // 如果有收藏状态，直接设置
       if (completeData.isFavorite !== undefined) {
@@ -259,6 +286,8 @@ export default {
       
       if (options.analysisId) {
         this.analysisId = options.analysisId;
+        // 如果有analysisId，查询完整数据
+        this.getCompleteDataFromDB(options.analysisId);
       }
       
       // 尝试从ingredientAnalysis获取数据(兼容旧版本)
@@ -630,6 +659,12 @@ export default {
     swiperChange(e) {
       this.currentImageIndex = e.detail.current;
     },
+    // 获取图片数量，用于显示指示点
+    getImageCount() {
+      let count = 2; // 默认有商品图和配料表图
+      if (this.nutritionImageID) count = 3; // 如果有营养成分表图，则共3张
+      return count;
+    },
     // 使用uni.previewImage替代自定义模态窗口
     openImageBrowser() {
       console.log('openImageBrowser 被调用，准备预览图片');
@@ -645,6 +680,11 @@ export default {
       // 添加配料图片
       if(this.productIngredientID) {
         urls.push(this.productIngredientID);
+      }
+      
+      // 添加营养成分表图片
+      if(this.nutritionImageID) {
+        urls.push(this.nutritionImageID);
       }
       
       // 如果没有任何图片，显示提示并返回
@@ -671,6 +711,49 @@ export default {
           });
         }
       });
+    },
+    // 从数据库获取完整数据
+    async getCompleteDataFromDB(id) {
+      try {
+        const db = uniCloud.database();
+        const { result } = await db.collection('ingredient_analyses')
+          .doc(id)
+          .get();
+          
+        if (result && result.data && result.data.length > 0) {
+          const data = result.data[0];
+          
+          // 更新nutritionImageID
+          if (data.nutritionImageID) {
+            this.nutritionImageID = data.nutritionImageID;
+            console.log('从数据库获取到营养成分表图片ID:', this.nutritionImageID);
+          }
+          
+          // 更新其他可能的字段
+          if (data.productImageID && !this.productImageID) {
+            this.productImageID = data.productImageID;
+          }
+          
+          if (data.productIngredientID && !this.productIngredientID) {
+            this.productIngredientID = data.productIngredientID;
+          }
+          
+          // 更新商品信息
+          if (data.productName && !this.productName) {
+            this.productName = data.productName;
+          }
+          
+          if (data.brandName && !this.brandName) {
+            this.brandName = data.brandName;
+          }
+          
+          if (data.productType && !this.productType) {
+            this.productType = data.productType;
+          }
+        }
+      } catch (error) {
+        console.error('从数据库获取完整数据失败:', error);
+      }
     }
   }
 }

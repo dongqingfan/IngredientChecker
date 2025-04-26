@@ -38,7 +38,8 @@ exports.main = async (event, context) => {
 		console.log('开始处理图片...');
 		console.log('配料表图片ID:', event.fileID);
 		console.log('商品图片ID:', event.productImageID);
-		
+		console.log('营养成分图片ID:', event.nutritionImageID);
+
 		// 3. 获取两张图片的内容
 		const getImageContent = async (fileID) => {
 			try {
@@ -77,16 +78,26 @@ exports.main = async (event, context) => {
 			}
 		};
 		
-		// 4. 并行获取两张图片的内容
-		console.log('开始并行获取两张图片的内容...');
-		let ingredientImageContent, productImageContent;
+		// 4. 并行获取图片的内容
+		console.log('开始并行获取图片的内容...');
+		let ingredientImageContent, productImageContent, nutritionImageContent = null;
 		
 		try {
-			[ingredientImageContent, productImageContent] = await Promise.all([
-				getImageContent(event.fileID),
-				getImageContent(event.productImageID)
-			]);
-			console.log('两张图片内容获取成功');
+			// 如果提供了营养成分表，则获取三张图片，否则获取两张图片
+			if (event.nutritionImageID) {
+				[ingredientImageContent, productImageContent, nutritionImageContent] = await Promise.all([
+					getImageContent(event.fileID),
+					getImageContent(event.productImageID),
+					getImageContent(event.nutritionImageID)
+				]);
+				console.log('三张图片内容获取成功');
+			} else {
+				[ingredientImageContent, productImageContent] = await Promise.all([
+					getImageContent(event.fileID),
+					getImageContent(event.productImageID)
+				]);
+				console.log('两张图片内容获取成功');
+			}
 		} catch (error) {
 			return {
 				code: -4,
@@ -141,12 +152,39 @@ JSON格式如下：
 {
   "productName": "完整的商品名称",
   "brandName": "品牌名称（如有）",
-  "productType": "产品类型（如：饼干、饮料、零食等）"
+  "productType": "产品类型（如：饼干、饮料、零食等）",
+  "quantity": "规格（如：100g、100ml、100g/袋等）"
 }
 
 只需识别商品的名称信息，不需要分析成分。请确保JSON格式正确，可以被JSON.parse()解析，只要输出JSON,不要输出其他内容。`;
 		
-		// 创建两个AI请求
+		// 营养成分表分析的AI提示
+		const nutritionPrompt = `这张图片是食品包装上的营养成分表。请识别并提取图片中的所有营养成分信息。
+请严格按照以下JSON格式返回结果，必须是完整有效的标准JSON：
+
+{
+  "qtyUnit": "单位（例如：每100ml、每100g、每份等）",
+  "nutritionInfo": [
+    ["营养素名称1", "数值1", "百分比1（如有）"],
+    ["营养素名称2", "数值2", "百分比2（如有）"],
+    ["营养素名称3", "数值3", "百分比3（如有）"]
+  ]
+}
+
+例如：
+{
+  "qtyUnit": "每100ml",
+  "nutritionInfo": [
+    ["能量", "140KJ", "2%"],
+    ["蛋白质", "0.1g", "0.2%"],
+    ["脂肪", "0g", "0%"],
+    ["碳水化合物", "7.8g", "3%"]
+  ]
+}
+
+请确保JSON格式正确，可以被JSON.parse()解析，只要输出JSON,不要输出其他内容。`;
+		
+		// 创建AI请求
 		const ingredientAnalysisPromise = axios({
 			method: 'POST',
 			url: 'https://api.siliconflow.cn/v1/chat/completions',
@@ -197,15 +235,55 @@ JSON格式如下：
 			}
 		});
 		
-		// 并行执行两个AI请求
-		let ingredientResponse, productResponse;
+		// 创建营养成分表分析请求（只在提供了营养成分表图片时）
+		let nutritionAnalysisPromise = null;
+		if (nutritionImageContent) {
+			nutritionAnalysisPromise = axios({
+				method: 'POST',
+				url: 'https://api.siliconflow.cn/v1/chat/completions',
+				headers: {
+					'Authorization': `Bearer ${aiToken}`,
+					'Content-Type': 'application/json'
+				},
+				data: {
+					model: 'Qwen/Qwen2.5-VL-32B-Instruct',
+					messages: [
+						{
+							role: 'user',
+							content: [
+								{ type: 'text', text: nutritionPrompt },
+								{ type: 'image_url', image_url: { url: nutritionImageContent } }
+							]
+						}
+					],
+					stream: false,
+					max_tokens: 1024,
+					temperature: 0.2,
+					top_p: 0.8
+				}
+			});
+		}
+		
+		// 并行执行AI请求
+		let ingredientResponse, productResponse, nutritionResponse = null;
 		
 		try {
-			[ingredientResponse, productResponse] = await Promise.all([
-				ingredientAnalysisPromise,
-				productAnalysisPromise
-			]);
-			console.log('两个AI API调用成功，处理返回结果...');
+			if (nutritionAnalysisPromise) {
+				// 如果有营养成分表分析请求，则三个请求并行执行
+				[ingredientResponse, productResponse, nutritionResponse] = await Promise.all([
+					ingredientAnalysisPromise,
+					productAnalysisPromise,
+					nutritionAnalysisPromise
+				]);
+				console.log('三个AI API调用成功，处理返回结果...');
+			} else {
+				// 否则只执行两个请求
+				[ingredientResponse, productResponse] = await Promise.all([
+					ingredientAnalysisPromise,
+					productAnalysisPromise
+				]);
+				console.log('两个AI API调用成功，处理返回结果...');
+			}
 		} catch (error) {
 			console.error('AI API调用失败:', error);
 			return {
@@ -407,27 +485,126 @@ JSON格式如下：
 			}
 		}
 		
-		// 8. 合并两张图片的分析结果
+		// 7.1 处理营养成分表分析结果
+		let nutritionData = {
+			qtyUnit: "未知",
+			nutritionInfo: []
+		};
+		
+		if (nutritionResponse && nutritionResponse.data && nutritionResponse.data.choices && nutritionResponse.data.choices.length > 0) {
+			try {
+				// 获取返回内容
+				let messageContent = nutritionResponse.data.choices[0].message.content;
+				console.log('营养成分表AI返回内容:', messageContent);
+				
+				// 检查是否包含JSON数据（至少要包含一对大括号）
+				if (!messageContent.includes('{') || !messageContent.includes('}')) {
+					// 如果没有大括号，说明AI返回了纯文本而非JSON
+					console.log('营养成分表AI返回了纯文本而非JSON，将构造默认响应');
+					throw new Error('AI返回非JSON格式回复: ' + messageContent.substring(0, 100) + '...');
+				}
+				
+				// 修复常见的JSON格式问题
+				messageContent = messageContent
+					.replace(/```json\s+|\s+```/g, '')
+					.replace(/```\s+|\s+```/g, '')
+					.replace(/\/\/.*$/gm, '')
+					.replace(/[\r\n\t]/g, ' ')
+					.trim();
+				
+				// 提取JSON部分
+				let jsonStart = messageContent.indexOf('{');
+				let jsonEnd = messageContent.lastIndexOf('}');
+				
+				if (jsonStart >= 0 && jsonEnd > jsonStart) {
+					messageContent = messageContent.substring(jsonStart, jsonEnd + 1);
+				}
+				
+				// 修复JSON格式问题
+				messageContent = messageContent.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
+				messageContent = messageContent.replace(/'/g, '"');
+				
+				console.log('最终清理后的营养成分表JSON:', messageContent);
+				
+				// 尝试解析JSON
+				let jsonData;
+				try {
+					jsonData = JSON.parse(messageContent);
+					console.log('解析后的营养成分表JSON数据:', jsonData);
+					
+					// 提取营养成分信息
+					nutritionData.qtyUnit = jsonData.qtyUnit || "未知";
+					
+					// 处理营养信息数组
+					if (jsonData.nutritionInfo && Array.isArray(jsonData.nutritionInfo)) {
+						nutritionData.nutritionInfo = jsonData.nutritionInfo.map(item => {
+							// 确保每个项目都是数组格式
+							if (Array.isArray(item)) {
+								// 如果数组长度不足3，用空字符串补齐
+								while (item.length < 3) {
+									item.push("");
+								}
+								return item;
+							} else if (typeof item === 'object') {
+								// 旧格式的兼容性处理
+								return [
+									String(Object.keys(item)[0] || ""),
+									String(Object.values(item)[0] || ""),
+									String(Object.values(item)[1] || "")
+								];
+							} else {
+								// 无法识别的格式，返回空数组
+								return ["未知", "", ""];
+							}
+						});
+					}
+					
+				} catch (parseError) {
+					console.error('营养成分表JSON解析错误:', parseError);
+					// 使用默认值
+					nutritionData = {
+						qtyUnit: "未知",
+						nutritionInfo: [["能量", "未知", ""], ["蛋白质", "未知", ""], ["脂肪", "未知", ""], ["碳水化合物", "未知", ""]]
+					};
+				}
+				
+			} catch (e) {
+				console.error('营养成分表JSON解析错误:', e);
+				// 使用默认值
+				nutritionData = {
+					qtyUnit: "未知",
+					nutritionInfo: [["能量", "未知", ""], ["蛋白质", "未知", ""], ["脂肪", "未知", ""], ["碳水化合物", "未知", ""]]
+				};
+			}
+		}
+		
+		// 8. 合并分析结果
 		const combinedData = {
 			...ingredientData
 		};
 		
-		console.log('合并后的完整分析数据:', combinedData,productData);
+		// // 如果有营养成分表分析结果，则添加到合并数据中
+		// if (nutritionResponse) {
+		// 	combinedData.nutritionDetails = nutritionData;
+		// }
+		
+		// console.log('合并后的完整分析数据:', combinedData, productData);
 		
 		// 9. 保存分析结果到数据库
 		let analysis_id = null;
 		try {
 			const collection = db.collection('ingredient_analyses');
 			const addResult = await collection.add({
-				//fileID: event.fileID,
 				productIngredientID: event.fileID,
 				productImageID: event.productImageID,
+				nutritionImageID: event.nutritionImageID || '', // 添加营养成分表图片ID
 				productName: productData.productName,
 				brandName: productData.brandName,
 				productType: productData.productType,
 				openid: event.openid || '',
 				analysis: combinedData,
-				createdAt: new Date()
+				createdAt: new Date(),
+				nutritionDetails: nutritionData
 			});
 			console.log('分析结果已保存到数据库, ID:', addResult.id);
 			analysis_id = addResult.id;

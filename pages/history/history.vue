@@ -305,6 +305,7 @@ export default {
         
         // 准备传递给result页面的完整数据
         const completeData = {
+          id: item.id,
           analysis: completeAnalysis,
           imageId: item.productImageID || item.productIngredientID, // 优先使用商品图片ID
           productIngredientID: item.productIngredientID,

@@ -87,4 +87,4 @@
 // 删除ingredient_analyses表中所有记录
 //db.collection('ingredient_analyses').remove()
 
-db.collection('user_favorites').remove()
+db.collection('ingredient_analyses').remove()

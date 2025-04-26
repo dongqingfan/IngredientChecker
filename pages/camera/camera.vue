@@ -18,9 +18,17 @@
       
       <!-- 提示文字 -->
       <view class="tips">
-        <text>{{ currentPhotoType === 'product' ? '将商品名称对准框内' : '将配料表对准框内' }}</text>
+        <text>{{ 
+          currentPhotoType === 'product' ? '将商品名称和净含量对准框内' : 
+          currentPhotoType === 'ingredient' ? '将配料表对准框内' : 
+          '将营养成分表对准框内' 
+        }}</text>
         <text>保持画面稳定</text>
-        <text class="photo-step">{{ currentPhotoType === 'product' ? '第1张：商品名称' : '第2张：配料表信息' }}</text>
+        <text class="photo-step">{{ 
+          currentPhotoType === 'product' ? '第1张：商品名称' : 
+          currentPhotoType === 'ingredient' ? '第2张：配料表信息' : 
+          '第3张：营养成分表' 
+        }}</text>
       </view>
     </camera>
     
@@ -41,7 +49,11 @@
 
     <!-- 预览区域 -->
     <view class="preview-area" v-if="previewImage">
-      <view class="preview-title">{{ currentPhotoType === 'product' ? '商品名称照片' : '配料表照片' }}</view>
+      <view class="preview-title">{{ 
+        currentPhotoType === 'product' ? '商品名称照片' : 
+        currentPhotoType === 'ingredient' ? '配料表照片' : 
+        '营养成分表照片' 
+      }}</view>
       <image :src="previewImage" mode="aspectFit" class="preview-image"></image>
       <view class="preview-actions">
         <view class="preview-btn retake" @tap="retakePhoto">重拍</view>
@@ -59,10 +71,12 @@ export default {
       previewImage: '',
       productPhoto: '', // 商品名称照片路径
       ingredientPhoto: '', // 配料表照片路径
-      currentPhotoType: 'product', // 当前拍摄的照片类型：'product'或'ingredient'
+      nutritionPhoto: '', // 营养成分表照片路径
+      currentPhotoType: 'product', // 当前拍摄的照片类型：'product'、'ingredient'或'nutrition'
       uploadedFiles: {
         product: null,
-        ingredient: null
+        ingredient: null,
+        nutrition: null
       }
     }
   },
@@ -118,14 +132,26 @@ export default {
           icon: 'none',
           duration: 2000
         });
-      } else {
-        // 已拍摄完配料表照片，开始处理两张照片
+      } else if(this.currentPhotoType === 'ingredient') {
+        // 已拍摄完配料表照片，切换到营养成分表拍摄
         this.ingredientPhoto = this.previewImage;
+        this.currentPhotoType = 'nutrition';
+        this.previewImage = '';
+        
+        // 提示用户拍摄营养成分表
+        uni.showToast({
+          title: '请继续拍摄营养成分表',
+          icon: 'none',
+          duration: 2000
+        });
+      } else {
+        // 已拍摄完营养成分表照片，开始处理所有照片
+        this.nutritionPhoto = this.previewImage;
         this.uploadPhotos();
       }
     },
     
-    // 上传两张照片
+    // 上传照片
     uploadPhotos() {
       // 显示加载提示
       uni.showLoading({
@@ -145,7 +171,7 @@ export default {
       
       // 创建变量存储处理进度
       let uploadCount = 0;
-      const totalUploads = 2;
+      const totalUploads = 3; // 更新为3张照片
       
       // 处理商品照片
       this.processAndUploadImage(this.productPhoto, 'product', openid, () => {
@@ -155,6 +181,12 @@ export default {
       
       // 处理配料表照片
       this.processAndUploadImage(this.ingredientPhoto, 'ingredient', openid, () => {
+        uploadCount++;
+        checkAllUploaded();
+      });
+      
+      // 处理营养成分表照片
+      this.processAndUploadImage(this.nutritionPhoto, 'nutrition', openid, () => {
         uploadCount++;
         checkAllUploaded();
       });
@@ -200,7 +232,7 @@ export default {
               console.error(`上传${type}照片失败:`, err);
               uni.hideLoading();
               uni.showToast({
-                title: `上传${type === 'product' ? '商品' : '配料表'}照片失败`,
+                title: `上传${type === 'product' ? '商品' : type === 'ingredient' ? '配料表' : '营养成分表'}照片失败`,
                 icon: 'none'
               });
             }
@@ -225,12 +257,13 @@ export default {
       });
     },
     
-    // 分析两张图片
+    // 分析图片
     analyzeImages(openid) {
       // 准备临时分析数据（显示"分析中"状态）
       const pendingAnalysis = {
         fileID: this.uploadedFiles.ingredient, // 使用配料表图片作为主图片ID
         productImageID: this.uploadedFiles.product, // 额外保存商品名称图片ID
+        nutritionImageID: this.uploadedFiles.nutrition, // 额外保存营养成分表图片ID
         name: '分析中...',
         image: this.uploadedFiles.product, // 使用商品图片作为显示图片
         date: new Date().toLocaleString(),
@@ -268,12 +301,13 @@ export default {
         });
       }, 2000);
       
-      // 在后台调用云函数分析配料表和商品照片
+      // 在后台调用云函数分析照片
       uniCloud.callFunction({
         name: 'imgUploadAndAnalyze',
         data: {
           fileID: this.uploadedFiles.ingredient, // 配料表图片ID
           productImageID: this.uploadedFiles.product, // 商品图片ID
+          nutritionImageID: this.uploadedFiles.nutrition, // 营养成分表图片ID
           openid: openid
         },
         success: (callRes) => {
@@ -290,7 +324,7 @@ export default {
           // 无需进一步处理，数据库记录会通过home页面的刷新加载
         },
         fail: (err) => {
-          console.error('分析配料表和商品照片失败:', err);
+          console.error('分析照片失败:', err);
           
           // 分析失败后，更新临时列表中的状态
           const updatedPendingList = uni.getStorageSync('pendingAnalyses') || [];
