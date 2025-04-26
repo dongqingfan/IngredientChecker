@@ -190,14 +190,20 @@ export default {
             };
           }
           
-          // 从分析记录中获取数据
+          // 从分析记录中获取数据 - 修改这里使用新的字段结构
           return {
             id: favorite._id,
             analysisId: favorite.analysis_id,
-            name: analysis.analysis?.scoreTitle || '未知产品',
+            name: analysis.productName || analysis.analysis?.scoreTitle || '未知产品',
             score: analysis.analysis?.score || 0,
-            image: analysis.fileID || '/static/images/placeholder.jpg',
+            // 优先使用商品图片ID，其次使用配料表图片ID
+            image: analysis.productImageID || analysis.productIngredientID || '/static/images/placeholder.jpg',
             date: formattedDate,
+            productIngredientID: analysis.productIngredientID,
+            productImageID: analysis.productImageID,
+            productName: analysis.productName || '',
+            brandName: analysis.brandName || '',
+            productType: analysis.productType || '',
             analysis: analysis.analysis || {}
           };
         });
@@ -250,22 +256,121 @@ export default {
     },
     
     // 跳转到结果页
-    goToResult(item) {
-      // 准备传递给result页面的完整数据
-      const completeData = {
-        analysis: item.analysis,
-        imageId: item.image,
-        analysisId: item.analysisId,
-        isFavorite: true // 从收藏页进入，肯定是已收藏状态
-      };
-      
-      // 缓存完整数据
-      uni.setStorageSync('completeAnalysisData', completeData);
-      
-      // 跳转到result页面
-      uni.navigateTo({
-        url: `/pages/result/result?from=favorites`
-      });
+    async goToResult(item) {
+      try {
+        // 先显示加载提示
+        uni.showLoading({
+          title: '加载数据中...'
+        });
+        
+        // 准备传递给result页面的完整数据
+        const completeData = {
+          analysis: item.analysis,
+          imageId: item.productImageID || item.productIngredientID, // 优先使用商品图片ID
+          productIngredientID: item.productIngredientID,
+          productImageID: item.productImageID,
+          productName: item.productName || '',
+          brandName: item.brandName || '',
+          productType: item.productType || '',
+          analysisId: item.analysisId, // 数据库记录ID
+          isFavorite: true // 从收藏页进入，肯定是已收藏状态
+        };
+        
+        // 如果有配料信息，查询详细数据并填充
+        if (completeData.analysis && completeData.analysis.ingredients && completeData.analysis.ingredients.length > 0) {
+          try {
+            const db = uniCloud.database();
+            
+            // 提取所有配料名称
+            const ingredientNames = completeData.analysis.ingredients.map(ing => ing.name);
+            
+            // 查询配料详细信息
+            const { result } = await db.collection('ingredients')
+              .where({
+                name: db.command.in(ingredientNames)
+              })
+              .get();
+            
+            // 如果查询到数据
+            if (result && result.data && result.data.length > 0) {
+              console.log('查询到配料详细信息:', result.data.length);
+              
+              // 创建配料名称到详细信息的映射
+              const ingredientMap = {};
+              result.data.forEach(ing => {
+                ingredientMap[ing.name] = ing;
+              });
+              
+              // 标记是否有危险成分
+              let hasDangerousIngredient = false;
+              
+              // 更新配料数组中的每个配料信息
+              completeData.analysis.ingredients = completeData.analysis.ingredients.map(ing => {
+                // 如果在ingredients表中找到了对应的配料信息
+                if (ingredientMap[ing.name]) {
+                  const detailedInfo = ingredientMap[ing.name];
+                  
+                  // 检查是否是危险成分
+                  if (detailedInfo.safety_status === '危险' || ing.riskLevel === 'high') {
+                    hasDangerousIngredient = true;
+                  }
+                  
+                  // 返回填充了详细信息的配料对象
+                  return {
+                    name: ing.name,
+                    riskLevel: (detailedInfo.safety_status === '危险' ? 'high' : 
+                               detailedInfo.safety_status === '安全' ? 'low' : 'medium'),
+                    category: detailedInfo.category || ing.category || '',
+                    usage: detailedInfo.functions || ing.usage || '',
+                    risks: Array.isArray(detailedInfo.regulations) && detailedInfo.regulations.length ? 
+                           detailedInfo.regulations.join('; ') : (ing.risks || '')
+                  };
+                }
+                
+                // 如果没有找到详细信息但标记为高风险
+                if (ing.riskLevel === 'high') {
+                  hasDangerousIngredient = true;
+                }
+                
+                // 如果没找到对应的详细信息，保持原样
+                return ing;
+              });
+              
+              // 根据是否有危险成分设置分数
+              if (hasDangerousIngredient) {
+                completeData.analysis.score = 0;
+              } else {
+                completeData.analysis.score = 100;
+              }
+              
+              console.log('配料信息填充完成，安全分数已更新为:', completeData.analysis.score);
+            } else {
+              console.log('未查询到配料详细信息');
+            }
+          } catch (error) {
+            console.error('查询配料详细信息失败:', error);
+            // 查询失败不影响页面跳转，使用原有数据
+          }
+        }
+        
+        // 缓存完整数据
+        uni.setStorageSync('completeAnalysisData', completeData);
+        
+        // 隐藏加载提示
+        uni.hideLoading();
+        
+        // 跳转到result页面
+        uni.navigateTo({
+          url: `/pages/result/result?from=favorites`
+        });
+      } catch (error) {
+        console.error('准备结果数据失败:', error);
+        uni.hideLoading();
+        uni.showToast({
+          title: '加载数据失败',
+          icon: 'none'
+        });
+      }
     },
     
     goToCamera() {

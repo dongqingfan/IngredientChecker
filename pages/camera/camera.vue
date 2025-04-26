@@ -172,18 +172,19 @@ export default {
       // 压缩图片
       uni.compressImage({
         src: imagePath,
-        quality: 80,
+        quality: 70,
         compressedWidth: 800,
         success: (res) => {
           // 获取当前日期
           const now = new Date();
           const year = now.getFullYear();
           const month = String(now.getMonth() + 1).padStart(2, '0');
-          const timestamp = now.getTime();
-          const random = Math.floor(Math.random() * 1000);
           
-          // 构建云存储路径
-          const cloudPath = `user_images/${openid}/${year}/${month}/${timestamp}_${type}_${random}.jpg`;
+          // 生成UUID作为唯一标识符
+          const uuid = this.generateUUID();
+          
+          // 构建云存储路径，使用UUID确保唯一性
+          const cloudPath = `user_images/${openid}/${year}/${month}/${uuid}_${type}.jpg`;
           
           // 上传图片到云存储
           uniCloud.uploadFile({
@@ -213,6 +214,14 @@ export default {
             icon: 'none'
           });
         }
+      });
+    },
+    
+    // 生成UUID函数
+    generateUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
       });
     },
     

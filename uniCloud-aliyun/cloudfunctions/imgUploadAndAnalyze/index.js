@@ -108,6 +108,7 @@ exports.main = async (event, context) => {
 2. 完整输出所有JSON结构，不要用"..."或类似符号简化或省略任何内容
 3. 确保返回的JSON能通过JSON.parse()验证，不要添加多余的逗号或缺少必要的逗号
 4. 相同的成分只出现一次，不要重复列出。例如"食用盐"和"盐"视为同一种成分
+5. 只要输出JSON，不要输出其他内容
 
 JSON格式如下：
 {
@@ -130,7 +131,8 @@ JSON格式如下：
 - 不要使用省略号或任何简化符号
 - 每个配料必须包含完整的所有字段
 - 确保JSON格式完整有效，检查所有引号和括号是否匹配
-- 最终JSON应该能通过JSON.parse()验证`;
+- 最终JSON应该能通过JSON.parse()验证
+- 只要输出JSON，不要输出其他内容`;
 
 		// 商品名称分析的AI提示
 		const productPrompt = `这张图片是食品包装上的商品名称部分。请识别并提取图片中的食品名称。
@@ -142,7 +144,7 @@ JSON格式如下：
   "productType": "产品类型（如：饼干、饮料、零食等）"
 }
 
-只需识别商品的名称信息，不需要分析成分。请确保JSON格式正确，可以被JSON.parse()解析。`;
+只需识别商品的名称信息，不需要分析成分。请确保JSON格式正确，可以被JSON.parse()解析，只要输出JSON,不要输出其他内容。`;
 		
 		// 创建两个AI请求
 		const ingredientAnalysisPromise = axios({
@@ -164,7 +166,7 @@ JSON格式如下：
 					}
 				],
 				stream: false,
-				max_tokens: 2048,
+				max_tokens: 1048,
 				temperature: 0.2,
 				top_p: 0.8
 			}

@@ -43,7 +43,7 @@
         <template v-else>
           <view class="star-rating">
             <image 
-              :src="'/static/icon/' + (foodInfo.score === 100 ? 'low.png' : foodInfo.score === 0 ? 'high.png' : 'medium.png')" 
+              :src="'/static/icon/' + (foodInfo.score > 0 ? 'low.png' : 'high.png')" 
               mode="aspectFit" 
               class="star"
             ></image>
