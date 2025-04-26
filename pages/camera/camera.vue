@@ -57,7 +57,7 @@
       <image :src="previewImage" mode="aspectFit" class="preview-image"></image>
       <view class="preview-actions">
         <view class="preview-btn retake" @tap="retakePhoto">重拍</view>
-        <view class="preview-btn confirm" @tap="confirmPhoto">确认</view>
+        <view class="preview-btn confirm" @tap="confirmPhoto">继续</view>
       </view>
     </view>
   </view>
