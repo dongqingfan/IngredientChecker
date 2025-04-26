@@ -421,7 +421,7 @@ JSON格式如下：
 		}
 		
 		// 7. 处理商品名称分析结果
-		let productData = { productName: '未知产品', brandName: '', productType: '' };
+		let productData = { productName: '未知产品', brandName: '', productType: '' , quantity: ''};
 		
 		if (productResponse.data && productResponse.data.choices && productResponse.data.choices.length > 0) {
 			try {
@@ -469,7 +469,8 @@ JSON格式如下：
 					jsonData = {
 						productName: '未知产品',
 						brandName: '',
-						productType: ''
+						productType: '',
+						quantity: ''
 					};
 				}
 				
@@ -477,7 +478,8 @@ JSON格式如下：
 				productData = {
 					productName: jsonData.productName || '未知产品',
 					brandName: jsonData.brandName || '',
-					productType: jsonData.productType || ''
+					productType: jsonData.productType || '',
+					quantity: jsonData.quantity || ''
 				};
 			} catch (e) {
 				console.error('商品名称JSON解析错误:', e);
@@ -601,6 +603,7 @@ JSON格式如下：
 				productName: productData.productName,
 				brandName: productData.brandName,
 				productType: productData.productType,
+				quantity: productData.quantity,
 				openid: event.openid || '',
 				analysis: combinedData,
 				createdAt: new Date(),
