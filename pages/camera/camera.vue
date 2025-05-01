@@ -56,8 +56,15 @@
       }}</view>
       <image :src="previewImage" mode="aspectFit" class="preview-image"></image>
       <view class="preview-actions">
-        <view class="preview-btn retake" @tap="retakePhoto">重拍</view>
-        <view class="preview-btn confirm" @tap="confirmPhoto">继续</view>
+        <view class="action-btn retake" @tap="retakePhoto">
+          <text>重拍</text>
+        </view>
+        <view class="center-btn">
+          <view class="confirm-btn" @tap="confirmPhoto">
+            {{ currentPhotoType === 'nutrition' ? '完成' : '继续' }}
+          </view>
+        </view>
+        <view class="action-btn empty"></view>
       </view>
     </view>
   </view>
@@ -489,28 +496,50 @@ export default {
   height: 120px;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
   padding: 0 20px;
 }
 
-.preview-btn {
-  width: 120px;
+.action-btn {
+  width: 80px;
   height: 44px;
-  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &.retake {
+    text {
+      font-size: 16px;
+      color: white;
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 10px 20px;
+      border-radius: 22px;
+    }
+  }
+  
+  &.empty {
+    // 空元素，用于平衡布局
+  }
+}
+
+.center-btn {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.confirm-btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 35px;
+  background-color: #4CAF50;
+  border: 4px solid #8BC34A;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  
-  &.retake {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-  }
-  
-  &.confirm {
-    background-color: #4CAF50;
-    color: white;
-  }
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 </style> 

@@ -87,4 +87,6 @@
 // 删除ingredient_analyses表中所有记录
 //db.collection('ingredient_analyses').remove()
 
-db.collection('ingredient_analyses').remove()
+ db.collection('ingredient_analyses')
+          .doc('681377c5ee97ef53e45fa999')
+          .get();

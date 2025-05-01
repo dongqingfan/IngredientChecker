@@ -64,7 +64,7 @@
       <view class="detail-section">
         <view class="detail-title">
           <text class="iconfont icon-list"></text>
-          <text>配料列表分析</text>
+          <text>配料列表分析1</text>
         </view>
         <view class="ingredient-list">
           <view 
@@ -78,6 +78,21 @@
             <view class="ingredient-safety" :class="item.riskLevel">
               {{item.riskLevel === 'high' ? '风险' : item.riskLevel === 'medium' ? '谨慎' : '安全'}}
             </view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 在配料列表区域和健康建议区域之间添加 -->
+      <view class="detail-section" v-if="nutritionDetails">
+        <view class="detail-title">
+          <text class="iconfont icon-food"></text>
+          <text>营养成分表 <text class="qty-unit">{{nutritionDetails.qtyUnit || ''}}</text></text>
+        </view>
+        <view class="nutrition-table">
+          <view class="nutrition-row" v-for="(item, index) in nutritionDetails.nutritionInfo" :key="index">
+            <text class="nutrition-name">{{item[0]}}</text>
+            <text class="nutrition-value">{{item[1]}}</text>
+            <text class="nutrition-percent">{{item[2]}}</text>
           </view>
         </view>
       </view>
@@ -192,6 +207,7 @@ export default {
       productImageID: '',
       productIngredientID: '',
       nutritionImageID: '',
+      nutritionDetails: null,
       foodInfo: {
         name: '加载中...',
         score: 0,
@@ -236,8 +252,6 @@ export default {
     const completeData = uni.getStorageSync('completeAnalysisData');
     
     if (completeData) {
-      console.log('从缓存获取到完整数据:', completeData);
-      
       // 设置页面数据
       this.imageId = completeData.imageId || '';
       this.analysisId = completeData.analysisId || '';
@@ -719,7 +733,9 @@ export default {
         const { result } = await db.collection('ingredient_analyses')
           .doc(id)
           .get();
-          
+        
+        console.log('从数据库获取到的数据:', result);
+        
         if (result && result.data && result.data.length > 0) {
           const data = result.data[0];
           
@@ -750,6 +766,11 @@ export default {
           if (data.productType && !this.productType) {
             this.productType = data.productType;
           }
+          if (data.nutritionDetails && data.nutritionDetails.nutritionInfo) {
+            this.nutritionDetails = data.nutritionDetails;
+            console.log('营养成分表数据有效:', this.nutritionDetails);
+          }
+          console.log('从数据库获取到的数据:', this.nutritionDetails);
         }
       } catch (error) {
         console.error('从数据库获取完整数据失败:', error);
@@ -1347,5 +1368,62 @@ export default {
   text-align: center;
   padding-bottom: 12px;
   background-color: rgba(0, 0, 0, 0.7);
+}
+
+.nutrition-table {
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nutrition-header {
+  padding: 12px 16px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #eee;
+}
+
+.unit-info {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.nutrition-row {
+  display: flex;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nutrition-row:last-child {
+  border-bottom: none;
+}
+
+.nutrition-name {
+  flex: 2;
+  font-size: 14px;
+  color: #333;
+}
+
+.nutrition-value {
+  flex: 2;
+  font-size: 14px;
+  color: #666;
+  text-align: right;
+}
+
+.nutrition-percent {
+  flex: 1;
+  font-size: 14px;
+  color: #999;
+  text-align: right;
+}
+
+.qty-unit {
+  font-size: 13px;
+  color: #888;
+  font-weight: normal;
+  margin-left: 4px;
 }
 </style> 
