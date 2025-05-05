@@ -64,7 +64,7 @@
       <view class="detail-section">
         <view class="detail-title">
           <text class="iconfont icon-list"></text>
-          <text>配料列表分析1</text>
+          <text>配料列表分析</text>
         </view>
         <view class="ingredient-list">
           <view 
